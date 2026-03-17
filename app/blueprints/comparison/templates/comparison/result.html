@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Comparison Results - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Comparison Results</h1>
+            <p class="text-muted">
+                <strong>Baseline:</strong> {{ session_a.session_date.strftime('%B %d, %Y') }} →
+                <strong>Comparison:</strong> {{ session_b.session_date.strftime('%B %d, %Y') }}
+                <span class="badge bg-info ms-2">{{ (session_b.session_date - session_a.session_date).days }} days</span>
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('comparison.select_sessions') }}" class="btn btn-outline-secondary">← Back to Selection</a>
+        </div>
+    </div>
+
+    <!-- Angle Tabs -->
+    <div class="row mb-3">
+        <div class="col">
+            <ul class="nav nav-tabs" id="angleTabs">
+                {% for angle in angles %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if loop.first %}active{% endif %}" id="tab-{{ angle }}" data-bs-toggle="tab" href="#angle-{{ angle }}">
+                            {% if angle == 'front' %}
+                                🎥 Front
+                            {% elif angle == 'left' %}
+                                ⬅️ Left
+                            {% elif angle == 'right' %}
+                                ➡️ Right
+                            {% else %}
+                                {{ angle|title }}
+                            {% endif %}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="angleTabContent">
+        {% for angle in angles %}
+            {% set data = comparison_data[angle] %}
+            <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="angle-{{ angle }}">
+                <!-- SSIM Score Card -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card border-left border-primary">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <div class="text-center" style="font-size: 3rem; font-weight: bold; color: #0d6efd;">
+                                            {{ (data.ssim_score * 100)|int }}%
+                                        </div>
+                                        <p class="text-center text-muted">SSIM Score</p>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <h5>{{ data.ssim_category }}</h5>
+                                        <p class="mb-0">{{ data.ssim_description }}</p>
+                                        <small class="text-muted mt-2 d-block">
+                                            A score near 1.0 means the images are very similar. Lower scores indicate more visible changes.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photos Comparison Section -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Photo Comparison</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="comparison-container" style="position: relative; display: inline-block; width: 100%; max-width: 600px;">
+                                    <img id="baseline-{{ angle }}" src="{{ url_for('sessions.serve_photo', filepath=comparison_data[angle].baseline_photo) }}" style="display: none;">
+                                    <img id="comparison-{{ angle }}" src="{{ url_for('sessions.serve_photo', filepath=comparison_data[angle].comparison_photo) }}" style="width: 100%; aspect-ratio: auto;">
+
+                                    <div id="slider-{{ angle }}" class="img-comparison-slider">
+                                        <figure>
+                                            <img src="{{ url_for('sessions.serve_photo', filepath=comparison_data[angle].baseline_photo) }}" alt="Baseline">
+                                        </figure>
+                                        <figure>
+                                            <img src="{{ url_for('sessions.serve_photo', filepath=comparison_data[angle].comparison_photo) }}" alt="Comparison">
+                                        </figure>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">Drag the slider left and right to compare baseline (left) and current (right) photos.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diff Heatmap -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Diff Heatmap (Change Visualization)</h5>
+                            </div>
+                            <div class="card-body">
+                                <img src="{{ url_for('comparison.get_diff_image', session_a_id=session_a.id, session_b_id=session_b.id, angle=angle) }}"
+                                     alt="Diff Heatmap" style="max-width: 100%; height: auto;">
+                                <small class="text-muted d-block mt-2">
+                                    <span class="badge bg-success">Green</span> = areas with little change |
+                                    <span class="badge bg-danger">Red</span> = areas with significant changes
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Condition Deltas -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Condition Score Changes</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Condition</th>
+                                                <th class="text-center">Baseline Score</th>
+                                                <th class="text-center">Current Score</th>
+                                                <th class="text-center">Change</th>
+                                                <th class="text-center">Trend</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in data.deltas_list %}
+                                            {% set delta = item.delta %}
+                                            {% set improved = item.improved %}
+                                            <tr>
+                                                <td><strong>{{ item.name|replace('_', ' ')|title }}</strong></td>
+                                                <td class="text-center">{{ item.score_a }}</td>
+                                                <td class="text-center">{{ item.score_b }}</td>
+                                                <td class="text-center">
+                                                    {% if delta > 0 %}
+                                                        <span class="badge bg-success">+{{ delta }}</span>
+                                                    {% elif delta < 0 %}
+                                                        <span class="badge bg-danger">{{ delta }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">0</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if delta > 5 %}
+                                                        <span title="Significantly improved" style="font-size: 1.5rem;">📈</span>
+                                                    {% elif delta > 0 %}
+                                                        <span title="Improved" style="font-size: 1.5rem;">↑</span>
+                                                    {% elif delta < -5 %}
+                                                        <span title="Significantly regressed" style="font-size: 1.5rem;">📉</span>
+                                                    {% elif delta < 0 %}
+                                                        <span title="Regressed" style="font-size: 1.5rem;">↓</span>
+                                                    {% else %}
+                                                        <span title="No change" style="font-size: 1.5rem;">→</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                {% set summary = data.summary %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Overall Assessment</h6>
+                                        {% if summary.status == 'Improved' %}
+                                            <p class="text-success"><strong>✅ {{ summary.status }}</strong></p>
+                                            <p class="small">Your skin has shown improvement over the past {{ summary.days_span }} days.</p>
+                                        {% elif summary.status == 'Regressed' %}
+                                            <p class="text-danger"><strong>⚠️ {{ summary.status }}</strong></p>
+                                            <p class="small">Your skin condition may have declined. Review your regimen and analysis.</p>
+                                        {% else %}
+                                            <p class="text-muted"><strong>➜ {{ summary.status }}</strong></p>
+                                            <p class="small">Your skin condition has remained relatively stable.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Detailed Changes</h6>
+                                        <ul class="small">
+                                            <li><strong>Overall Delta:</strong> {{ summary.overall_delta }} point{{ 's' if summary.overall_delta != 1 }}</li>
+                                            <li><strong>Improved Conditions:</strong> {{ summary.improved_count }}</li>
+                                            <li><strong>Regressed Conditions:</strong> {{ summary.regressed_count }}</li>
+                                            <li><strong>Time Span:</strong> {{ summary.days_span }} day{{ 's' if summary.days_span != 1 }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Back Button -->
+    <div class="row mt-4">
+        <div class="col">
+            <a href="{{ url_for('comparison.select_sessions') }}" class="btn btn-outline-secondary">← Compare Other Sessions</a>
+            <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-outline-primary">View All Sessions</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .img-comparison-slider {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .img-comparison-slider figure {
+        margin: 0;
+        position: relative;
+        width: 100%;
+    }
+
+    .img-comparison-slider img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .img-comparison-slider figure:nth-of-type(1) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        margin: 0;
+    }
+
+    .img-comparison-slider figure:nth-of-type(1) img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .img-comparison-slider input[type=range] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        opacity: 0;
+        z-index: 5;
+        margin: 0;
+        padding: 0;
+    }
+
+    .img-comparison-slider figure:nth-of-type(1)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        z-index: 4;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize image comparison sliders for each angle
+    document.querySelectorAll('.img-comparison-slider').forEach(slider => {
+        const img1 = slider.querySelector('figure:nth-of-type(2)');
+        const img2 = slider.querySelector('figure:nth-of-type(1)');
+        const input = document.createElement('input');
+
+        input.type = 'range';
+        input.min = 0;
+        input.max = 100;
+        input.value = 50;
+
+        slider.appendChild(input);
+
+        function updateSlider(value) {
+            img2.style.width = value + '%';
+        }
+
+        input.addEventListener('input', (e) => {
+            updateSlider(e.target.value);
+        });
+
+        // Initialize
+        updateSlider(50);
+    });
+</script>
+{% endblock %}

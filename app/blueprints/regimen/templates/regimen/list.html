@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Regimen - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Skincare Regimen</h1>
+                <p class="text-muted">Manage your current skincare routine</p>
+            </div>
+            <a href="{{ url_for('regimen.add_regimen') }}" class="btn btn-primary">
+                + Add Product
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Regimen by Time of Day -->
+    <div class="mb-5">
+        <h3 class="mb-3">Active Routine</h3>
+
+        {% if regimen_by_time %}
+            {% for time, products in regimen_by_time|dictsort %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        {% if time == 'AM' %}
+                            🌅 Morning Routine
+                        {% elif time == 'PM' %}
+                            🌙 Evening Routine
+                        {% else %}
+                            📋 As Needed
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Type</th>
+                                    <th>Frequency</th>
+                                    <th>Since</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ product.product_name }}</strong>
+                                        {% if product.notes %}
+                                        <br>
+                                        <small class="text-muted">{{ product.notes }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ product.product_type }}</span>
+                                    </td>
+                                    <td>{{ product.frequency }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ product.started_on.strftime('%b %d, %Y') }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('regimen.edit_regimen', regimen_id=product.id) }}"
+                                           class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        <form method="POST"
+                                              action="{{ url_for('regimen.deactivate_regimen', regimen_id=product.id) }}"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('Deactivate this product?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <strong>No products in regimen yet.</strong>
+                <a href="{{ url_for('regimen.add_regimen') }}">Add your first product</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Product History (Optional) -->
+    {% if inactive_entries %}
+    <div class="mb-5">
+        <h3 class="mb-3">Product History</h3>
+        <details>
+            <summary class="cursor-pointer">Show deactivated products ({{ inactive_entries|length }})</summary>
+            <div class="table-responsive mt-3">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Used From</th>
+                            <th>Until</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in inactive_entries %}
+                        <tr class="text-muted">
+                            <td>{{ product.product_name }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ product.product_type }}</span>
+                            </td>
+                            <td>{{ product.started_on.strftime('%b %d, %Y') }}</td>
+                            <td>{{ product.ended_on.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                {% set duration = (product.ended_on - product.started_on).days %}
+                                {% if duration == 0 %}
+                                    1 day
+                                {% elif duration == 1 %}
+                                    1 day
+                                {% elif duration < 7 %}
+                                    {{ duration }} days
+                                {% elif duration < 30 %}
+                                    {{ (duration / 7)|int }} weeks
+                                {% else %}
+                                    {{ (duration / 30)|int }} months
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Active Products</h5>
+                    <div class="display-4">{{ active_entries|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">AM Products</h5>
+                    <div class="display-4">{{ regimen_by_time.get('AM', [])|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">PM Products</h5>
+                    <div class="display-4">{{ regimen_by_time.get('PM', [])|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Treatments</h5>
+                    <div class="display-4">{{ regimen_by_time.get('Anytime', [])|length }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="alert alert-secondary">
+        <h6 class="alert-heading">💡 Tip</h6>
+        <p class="mb-0">Your current regimen is automatically saved as a snapshot each time you upload a new session. This helps track which products you were using at the time of analysis.</p>
+    </div>
+</div>
+
+<style>
+    summary {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

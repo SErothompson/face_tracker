@@ -22,9 +22,17 @@ def create_app(config_name=None):
     from .blueprints.main.routes import main_bp
     from .blueprints.sessions.routes import sessions_bp
     from .blueprints.analysis.routes import analysis_bp
+    from .blueprints.regimen.routes import regimen_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(analysis_bp)
+    app.register_blueprint(regimen_bp)
+
+    # Seed regimen data on first run (non-testing)
+    if config_name != "testing":
+        with app.app_context():
+            from .blueprints.regimen.defaults import seed_regimen
+            seed_regimen()
 
     return app

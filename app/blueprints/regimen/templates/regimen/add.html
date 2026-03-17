@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{% if entry %}Edit{{ else }}Add{% endif %} Product - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h3 class="mb-0">
+                        {% if entry %}
+                            Edit: {{ entry.product_name }}
+                        {% else %}
+                            Add New Skincare Product
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Product Name -->
+                        <div class="mb-3">
+                            <label for="product_name" class="form-label">Product Name *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="product_name"
+                                   name="product_name"
+                                   value="{{ entry.product_name if entry else '' }}"
+                                   placeholder="e.g., CeraVe Moisturizing Cream"
+                                   required>
+                            <small class="form-text text-muted">The exact product name (include brand)</small>
+                        </div>
+
+                        <!-- Product Type -->
+                        <div class="mb-3">
+                            <label for="product_type" class="form-label">Product Type *</label>
+                            <select class="form-select" id="product_type" name="product_type" required>
+                                <option value="">-- Select Type --</option>
+                                {% for ptype in product_types %}
+                                    <option value="{{ ptype }}"
+                                            {% if entry and entry.product_type == ptype %}selected{% endif %}>
+                                        {{ ptype }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Frequency -->
+                        <div class="mb-3">
+                            <label for="frequency" class="form-label">Usage Frequency</label>
+                            <select class="form-select" id="frequency" name="frequency">
+                                {% for freq in frequencies %}
+                                    <option value="{{ freq }}"
+                                            {% if entry and entry.frequency == freq %}selected{% endif %}>
+                                        {{ freq }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">How often you use this product</small>
+                        </div>
+
+                        <!-- Time of Day -->
+                        <div class="mb-3">
+                            <label for="time_of_day" class="form-label">Time of Day</label>
+                            <select class="form-select" id="time_of_day" name="time_of_day">
+                                {% for time in times %}
+                                    <option value="{{ time }}"
+                                            {% if entry and entry.time_of_day == time %}selected{% endif %}>
+                                        {% if time == 'AM' %}
+                                            🌅 Morning (AM)
+                                        {% elif time == 'PM' %}
+                                            🌙 Evening (PM)
+                                        {% else %}
+                                            📋 As Needed
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control"
+                                      id="notes"
+                                      name="notes"
+                                      rows="3"
+                                      placeholder="e.g., Salicylic acid, use 2-3x weekly, may dry out skin">{{ entry.notes if entry else '' }}</textarea>
+                            <small class="form-text text-muted">Any additional details (ingredients, precautions, etc.)</small>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div class="alert alert-info small mb-3">
+                            <strong>📌 Remember:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Include the brand name for clarity</li>
+                                <li>Note any key ingredients or active compounds</li>
+                                <li>Mention any special instructions or precautions</li>
+                                <li>Your regimen is automatically tracked with each analysis session</li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% if entry %}
+                                    Save Changes
+                                {% else %}
+                                    Add Product
+                                {% endif %}
+                            </button>
+                            <a href="{{ url_for('regimen.list_regimen') }}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Product Examples -->
+            {% if not entry %}
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">💡 Example Products</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Morning Routine</h6>
+                            <ul class="small">
+                                <li>CeraVe Hydrating Cleanser</li>
+                                <li>Vitamin C Serum</li>
+                                <li>Moisturizer with Niacinamide</li>
+                                <li>Sunscreen SPF 30+</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Evening Routine</h6>
+                            <ul class="small">
+                                <li>Gentle Cleanser</li>
+                                <li>Retinol Serum (3-4x/week)</li>
+                                <li>Night Moisturizer</li>
+                                <li>Eye Cream (optional)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

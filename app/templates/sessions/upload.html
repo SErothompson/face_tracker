@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Photos - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Upload Session</h1>
+        <p class="text-muted">Upload three photos of your face (front, left side, right side) for this week's session.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <!-- Session Date -->
+                    <div class="mb-3">
+                        <label for="sessionDate" class="form-label">Session Date</label>
+                        <input type="date" class="form-control" id="sessionDate" name="session_date" value="{{ today }}" required>
+                    </div>
+
+                    <!-- Photo Uploads -->
+                    <div class="row g-3 mb-3">
+                        {% for angle in ['front', 'left', 'right'] %}
+                        <div class="col-md-4">
+                            <label for="photo{{ angle|capitalize }}" class="form-label">
+                                {{ angle|capitalize }} Photo <span class="badge bg-danger">Required</span>
+                            </label>
+                            <input type="file" class="form-control photo-input" id="photo{{ angle|capitalize }}" name="photo_{{ angle }}" accept="image/*" required>
+                            <small class="form-text text-muted">PNG, JPG, JPEG, or WebP (max 16 MB)</small>
+
+                            <!-- Preview -->
+                            <div class="mt-2" id="preview{{ angle|capitalize }}" style="display: none;">
+                                <img id="img{{ angle|capitalize }}" class="img-fluid rounded" style="max-height: 200px;">
+                                <p class="small text-muted mt-1" id="info{{ angle|capitalize }}"></p>
+                            </div>
+                            <div id="placeholder{{ angle|capitalize }}" class="border rounded p-3 text-center text-muted" style="background: #f8f9fa; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                                <span>No image selected</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any observations about your skin condition this week..."></textarea>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                            Upload Session
+                        </button>
+                        <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Tips for Best Results</h5>
+                <ul class="small">
+                    <li>Use consistent lighting (natural daylight is best)</li>
+                    <li>Take photos at the same time of day each week</li>
+                    <li>Use the same background each time for consistency</li>
+                    <li>Keep the same distance from the camera</li>
+                    <li>Front photo should show your entire face</li>
+                    <li>Profile photos should clearly show the side of your face</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

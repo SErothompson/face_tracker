@@ -4,9 +4,14 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col">
-        <h1>Dashboard</h1>
-        <p class="text-muted">Track your skin health over time.</p>
+    <div class="col d-flex justify-content-between align-items-center">
+        <div>
+            <h1>Dashboard</h1>
+            <p class="text-muted">Track your skin health over time.</p>
+        </div>
+        <a href="{{ url_for('sessions.upload') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Session
+        </a>
     </div>
 </div>
 
@@ -16,7 +21,7 @@
             <div class="card-body">
                 <h5 class="card-title">Overall Score</h5>
                 <p class="display-4 text-muted">--</p>
-                <p class="text-muted">Upload your first session to get started</p>
+                <p class="text-muted small">Upload your first session to get started</p>
             </div>
         </div>
     </div>
@@ -37,6 +42,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Sessions</h5>
+                <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-sm btn-link">View All</a>
             </div>
             <div class="card-body">
                 {% if recent_sessions %}
@@ -52,18 +58,18 @@
                         <tbody>
                             {% for session in recent_sessions %}
                             <tr>
-                                <td>{{ session.session_date.strftime('%B %d, %Y') }}</td>
-                                <td>{{ session.photos | length }} photo{{ 's' if session.photos | length != 1 }}</td>
-                                <td>{{ session.notes[:50] }}{{ '...' if session.notes|length > 50 }}</td>
+                                <td><strong>{{ session.session_date.strftime('%B %d, %Y') }}</strong></td>
+                                <td><span class="badge bg-info">{{ session.photos | length }} photo{{ 's' if session.photos | length != 1 }}</span></td>
+                                <td><small>{{ session.notes[:50] if session.notes else '--' }}{{ '...' if session.notes|length > 50 }}</small></td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary disabled">View</a>
+                                    <a href="{{ url_for('sessions.detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="text-muted mb-0">No sessions yet. Upload your first set of photos to get started.</p>
+                    <p class="text-muted mb-0">No sessions yet. <a href="{{ url_for('sessions.upload') }}">Upload your first session</a> to get started.</p>
                 {% endif %}
             </div>
         </div>
@@ -74,7 +80,7 @@
                 <h5 class="mb-0">Current Regimen</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted mb-0">Regimen management coming soon.</p>
+                <p class="text-muted mb-0 small">Regimen management coming soon.</p>
             </div>
         </div>
     </div>

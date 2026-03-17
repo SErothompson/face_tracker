@@ -20,7 +20,9 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
 
     from .blueprints.main.routes import main_bp
+    from .blueprints.sessions.routes import sessions_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(sessions_bp)
 
     return app

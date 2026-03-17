@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Session - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col d-flex justify-content-between align-items-center">
+        <div>
+            <h1>Session Details</h1>
+            <p class="text-muted">{{ session.session_date.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-outline-secondary">Back to Sessions</a>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Session</button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Photos -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Photos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for angle in ['front', 'left', 'right'] %}
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            {% if angle in photos_by_angle %}
+                                {% set photo = photos_by_angle[angle] %}
+                                <img src="{{ url_for('sessions.serve_photo', filepath=photo.filepath) }}" class="img-fluid rounded" alt="{{ angle }} photo">
+                                <p class="text-capitalize small text-muted mt-2">{{ angle }}</p>
+                            {% else %}
+                                <div class="bg-light rounded p-5 text-center" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                                    <span class="text-muted">No {{ angle }} photo</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if session.notes %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ session.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Session Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Session Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">Date:</dt>
+                    <dd class="col-sm-6">{{ session.session_date.strftime('%b %d, %Y') }}</dd>
+
+                    <dt class="col-sm-6">Created:</dt>
+                    <dd class="col-sm-6">{{ session.created_at.strftime('%b %d, %I:%M %p') }}</dd>
+
+                    <dt class="col-sm-6">Photos:</dt>
+                    <dd class="col-sm-6"><span class="badge bg-info">{{ session.photos|length }}</span></dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if session.conditions %}
+                    <p class="small text-muted">Conditions detected: {{ session.conditions|length }}</p>
+                    <div class="d-flex flex-column gap-2">
+                        {% for condition in session.conditions %}
+                        <div class="p-2 bg-light rounded small">
+                            <strong>{{ condition.condition_type|title }}</strong>
+                            <span class="badge badge-{{ 'success' if condition.severity == 'mild' else 'warning' if condition.severity == 'moderate' else 'danger' }} float-end">{{ condition.severity|capitalize }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small">No analysis run yet.</p>
+                    <button type="button" class="btn btn-sm btn-primary disabled">Run Analysis</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body d-flex flex-column gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary disabled">Run Analysis</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary disabled">Compare with Previous</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary disabled">Download Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Session?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this session from <strong>{{ session.session_date.strftime('%B %d, %Y') }}</strong>?</p>
+                <p class="text-muted small">This action cannot be undone. All photos and analysis data will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('sessions.delete', session_id=session.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Session</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

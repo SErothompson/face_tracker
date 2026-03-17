@@ -198,10 +198,10 @@
             <button class="btn btn-secondary" disabled title="Compare (Phase 7)">
                 Compare to Previous
             </button>
-            <!-- Phase 8 placeholder -->
-            <button class="btn btn-secondary" disabled title="Recommendations (Phase 8)">
-                Get Recommendations
-            </button>
+            <!-- Phase 8: Get Recommendations -->
+            <a href="{{ url_for('search.recommendations', session_id=session.id) }}" class="btn btn-success">
+                💡 Get Recommendations
+            </a>
         </div>
     </div>
 </div>

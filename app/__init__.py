@@ -25,6 +25,7 @@ def create_app(config_name=None):
     from .blueprints.regimen.routes import regimen_bp
     from .blueprints.api.routes import api_bp
     from .blueprints.comparison.routes import comparison_bp
+    from .blueprints.search.routes import search_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(sessions_bp)
@@ -32,6 +33,7 @@ def create_app(config_name=None):
     app.register_blueprint(regimen_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(comparison_bp)
+    app.register_blueprint(search_bp)
 
     # Seed regimen data on first run (non-testing)
     if config_name != "testing":

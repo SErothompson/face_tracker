@@ -1,0 +1,46 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid #eee;
+}
+
+.score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.score-good { background-color: #d4edda; color: #155724; }
+.score-moderate { background-color: #fff3cd; color: #856404; }
+.score-poor { background-color: #f8d7da; color: #721c24; }
+
+.severity-mild { color: #28a745; }
+.severity-moderate { color: #ffc107; }
+.severity-severe { color: #dc3545; }
+
+.thumbnail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.thumbnail-grid img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}

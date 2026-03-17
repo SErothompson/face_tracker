@@ -1,11 +1,8 @@
-"""A minimal entrypoint for the face_tracker project."""
+"""Entrypoint for the face_tracker application."""
 
-import sys
+from app import create_app
 
-
-def main():
-    print("face_tracker starter")
-
+app = create_app()
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)

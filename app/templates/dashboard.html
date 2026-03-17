@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Dashboard</h1>
+        <p class="text-muted">Track your skin health over time.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Overall Score</h5>
+                <p class="display-4 text-muted">--</p>
+                <p class="text-muted">Upload your first session to get started</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Skin Health Trends</h5>
+                <div class="d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <p class="text-muted">Charts will appear after your first analysis.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Sessions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Photos</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in recent_sessions %}
+                            <tr>
+                                <td>{{ session.session_date.strftime('%B %d, %Y') }}</td>
+                                <td>{{ session.photos | length }} photo{{ 's' if session.photos | length != 1 }}</td>
+                                <td>{{ session.notes[:50] }}{{ '...' if session.notes|length > 50 }}</td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary disabled">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-muted mb-0">No sessions yet. Upload your first set of photos to get started.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Current Regimen</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">Regimen management coming soon.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

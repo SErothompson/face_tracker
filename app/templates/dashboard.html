@@ -3,86 +3,257 @@
 {% block title %}Dashboard - Skin Health Tracker{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col d-flex justify-content-between align-items-center">
-        <div>
-            <h1>Dashboard</h1>
-            <p class="text-muted">Track your skin health over time.</p>
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Dashboard</h1>
+                <p class="text-muted">Track your skin health over time.</p>
+            </div>
+            <a href="{{ url_for('sessions.upload') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Session
+            </a>
         </div>
-        <a href="{{ url_for('sessions.upload') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> New Session
-        </a>
     </div>
-</div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title">Overall Score</h5>
-                <p class="display-4 text-muted">--</p>
-                <p class="text-muted small">Upload your first session to get started</p>
+    <!-- Overall Score Hero Card -->
+    {% if latest_session and latest_session.analysis_results %}
+        {% set overall_score = latest_session_score %}
+        {% set severity_label = severity_label_text %}
+        {% set badge_color = badge_color_text %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <h5 class="card-title text-muted">Overall Skin Health Score</h5>
+                        <div class="d-flex justify-content-center align-items-center gap-3">
+                            <div class="display-1">{{ overall_score }}</div>
+                            <div class="text-start">
+                                <span class="badge bg-{{ badge_color }} fs-5 d-block mb-2">{{ severity_label }}</span>
+                                <small class="text-muted">As of {{ latest_session.session_date.strftime('%B %d, %Y') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Skin Health Trends</h5>
-                <div class="d-flex align-items-center justify-content-center" style="height: 200px;">
-                    <p class="text-muted">Charts will appear after your first analysis.</p>
+    {% else %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <h5 class="card-title text-muted">Overall Skin Health Score</h5>
+                        <div class="display-1 text-muted">--</div>
+                        <small class="text-muted">Upload your first session and run analysis to get started</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Stats Row -->
+    {% if sessions_with_analysis %}
+        <div class="row mb-4 g-3">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Total Sessions</h6>
+                        <div class="display-5" id="totalSessions">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Average Score</h6>
+                        <div class="display-5" id="avgScore">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Best Score</h6>
+                        <div class="display-5" id="bestScore">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Worst Score</h6>
+                        <div class="display-5" id="worstScore">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Charts Row -->
+    {% if sessions_with_analysis %}
+        <div class="row mb-4 g-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Trends Over Time</h5>
+                    </div>
+                    <div class="card-body">
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="trendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Condition Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <div style="position: relative; height: 300px;">
+                            {% if latest_session %}
+                                <canvas id="radarChart" data-session-id="{{ latest_session.id }}"></canvas>
+                            {% else %}
+                                <div class="alert alert-info mb-0">No analysis data available.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Conditions Grid -->
+    {% if latest_session and conditions_by_type %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h5 class="mb-3">Condition Details</h5>
+            </div>
+            {% set condition_info = {
+                'acne': {'label': 'Acne & Breakouts', 'icon': '🔴', 'description': 'Presence of pimples, breakouts, and acneic lesions'},
+                'texture': {'label': 'Texture Issues', 'icon': '📊', 'description': 'Surface roughness and irregularities'},
+                'dark_spots': {'label': 'Dark Spots', 'icon': '⚫', 'description': 'Hyperpigmentation and spots'},
+                'wrinkles': {'label': 'Fine Lines & Wrinkles', 'icon': '〰️', 'description': 'Expression and static lines'},
+                'under_eye': {'label': 'Under-Eye Area', 'icon': '👁️', 'description': 'Darkness and puffiness'},
+                'redness': {'label': 'Redness/Inflammation', 'icon': '🔥', 'description': 'Inflammation and erythema'}
+            } %}
+
+            {% for condition_name, condition_data in condition_info.items() %}
+                {% set condition = conditions_by_type.get(condition_name) %}
+                {% if condition %}
+                    {% set score = condition_scores.get(condition_name, 0) %}
+                    {% set severity = condition.severity if condition else 'unknown' %}
+                    {% set badge_color_map = {'none': 'success', 'mild': 'info', 'moderate': 'warning', 'severe': 'danger'} %}
+                    {% set color = badge_color_map.get(severity, 'secondary') %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">
+                                            <span class="me-2">{{ condition_data.icon }}</span>{{ condition_data.label }}
+                                        </h6>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="display-6" style="color: #0d6efd;">{{ int(score) }}</div>
+                                        <small class="text-muted">/100</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-{{ color }} mb-2">{{ severity|title }}</span>
+                                <p class="small text-muted mb-0">{{ condition_data.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Recent Sessions Table -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <h5 class="mb-0">Recent Sessions</h5>
+                    <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-sm btn-link">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_sessions %}
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Photos</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                <tr>
+                                    <td><strong>{{ session.session_date.strftime('%B %d, %Y') }}</strong></td>
+                                    <td><span class="badge bg-info">{{ session.photos | length }} photo{{ 's' if session.photos | length != 1 }}</span></td>
+                                    <td><small>{{ session.notes[:50] if session.notes else '--' }}{{ '...' if session.notes|length > 50 }}</small></td>
+                                    <td>
+                                        <a href="{{ url_for('sessions.detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted mb-0">No sessions yet. <a href="{{ url_for('sessions.upload') }}">Upload your first session</a> to get started.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Regimen Summary -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Active Regimen</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_regimen %}
+                        <div class="mb-3">
+                            <h6 class="text-muted">🌅 Morning</h6>
+                            <ul class="list-unstyled small mb-3">
+                                {% for product in active_regimen if product.time_of_day == 'AM' %}
+                                    <li class="mb-1"><i class="bi bi-check-circle text-success"></i> {{ product.product_name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-muted">🌙 Evening</h6>
+                            <ul class="list-unstyled small mb-3">
+                                {% for product in active_regimen if product.time_of_day == 'PM' %}
+                                    <li class="mb-1"><i class="bi bi-check-circle text-success"></i> {{ product.product_name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-muted">📋 Treatments</h6>
+                            <ul class="list-unstyled small">
+                                {% for product in active_regimen if product.time_of_day not in ['AM', 'PM'] %}
+                                    <li class="mb-1"><i class="bi bi-check-circle text-success"></i> {{ product.product_name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('regimen.list_regimen') }}" class="btn btn-sm btn-outline-secondary w-100">Manage Regimen</a>
+                    {% else %}
+                        <p class="text-muted small mb-3">No products in your regimen yet.</p>
+                        <a href="{{ url_for('regimen.list_regimen') }}" class="btn btn-sm btn-primary w-100">Set Up Regimen</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Sessions</h5>
-                <a href="{{ url_for('sessions.list_sessions') }}" class="btn btn-sm btn-link">View All</a>
-            </div>
-            <div class="card-body">
-                {% if recent_sessions %}
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Photos</th>
-                                <th>Notes</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for session in recent_sessions %}
-                            <tr>
-                                <td><strong>{{ session.session_date.strftime('%B %d, %Y') }}</strong></td>
-                                <td><span class="badge bg-info">{{ session.photos | length }} photo{{ 's' if session.photos | length != 1 }}</span></td>
-                                <td><small>{{ session.notes[:50] if session.notes else '--' }}{{ '...' if session.notes|length > 50 }}</small></td>
-                                <td>
-                                    <a href="{{ url_for('sessions.detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p class="text-muted mb-0">No sessions yet. <a href="{{ url_for('sessions.upload') }}">Upload your first session</a> to get started.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Current Regimen</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-0 small">Regimen management coming soon.</p>
-            </div>
-        </div>
-    </div>
-</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 {% endblock %}

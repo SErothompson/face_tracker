@@ -5,6 +5,7 @@ from app.blueprints.analysis.detectors.acne import AcneDetector
 from app.blueprints.analysis.detectors.dark_spots import DarkSpotsDetector
 from app.blueprints.analysis.detectors.face_mesh import FaceMeshDetector
 from app.blueprints.analysis.detectors.regions import extract_all_regions, extract_region
+from app.blueprints.analysis.detectors.redness import RednessDetector
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
 from app.blueprints.analysis.detectors.texture import TextureDetector
 from app.blueprints.analysis.detectors.undereye import UnderEyeDetector
@@ -19,7 +20,7 @@ class AnalysisEngine:
     1. Load photo
     2. Detect face landmarks
     3. Extract facial regions
-    4. Run 5 condition detectors
+    4. Run 6 condition detectors
     5. Score and aggregate results
     6. Save to database
     """
@@ -32,6 +33,7 @@ class AnalysisEngine:
         self.wrinkles_detector = WrinklesDetector()
         self.texture_detector = TextureDetector()
         self.undereye_detector = UnderEyeDetector()
+        self.redness_detector = RednessDetector()
 
     def analyze_photo(self, photo: Photo, image_bgr) -> Optional[dict]:
         """
@@ -138,6 +140,21 @@ class AnalysisEngine:
         condition_results["under_eye"] = {
             "severity": undereye_severity,
             "details": {"sides": ["left", "right"], "scores": undereye_scores},
+        }
+
+        # Redness (run on face regions - cheeks, nose, chin indicate inflammation)
+        redness_scores = []
+        for region_name in ["left_cheek", "right_cheek", "nose", "chin"]:
+            if region_name in regions:
+                roi, mask, bbox = regions[region_name]
+                result = self.redness_detector.detect(roi, mask)
+                redness_scores.append(result["severity"])
+        redness_severity = (
+            int(sum(redness_scores) / len(redness_scores)) if redness_scores else 0
+        )
+        condition_results["redness"] = {
+            "severity": redness_severity,
+            "details": {"regions": ["cheeks", "nose", "chin"], "scores": redness_scores},
         }
 
         # Step 4: Normalize and score

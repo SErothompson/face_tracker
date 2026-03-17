@@ -13,6 +13,7 @@ class SkinHealthScorer:
     - Texture: 20% (affects appearance significantly)
     - Dark Spots: 15% (noticeable but less urgent)
     - Wrinkles: 15% (progressive, important to track)
+    - Redness: 15% (indicates active inflammation)
     - Under-Eye: 10% (localized but noticeable)
     """
 
@@ -21,10 +22,9 @@ class SkinHealthScorer:
         "texture": 0.20,
         "dark_spots": 0.15,
         "wrinkles": 0.15,
+        "redness": 0.15,
         "under_eye": 0.10,
     }
-
-    # Remaining 15% could be allocated in Phase 5+
 
     @classmethod
     def normalize_condition_score(cls, raw_score: int, condition: str) -> int:

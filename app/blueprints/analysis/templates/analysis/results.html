@@ -134,6 +134,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Redness -->
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Redness</h5>
+                </div>
+                <div class="card-body">
+                    <div class="score-circle d-flex align-items-center justify-content-center mb-3"
+                         style="width: 80px; height: 80px; font-size: 24px; font-weight: bold;
+                                 background: #f0f0f0; border-radius: 50%; margin: 0 auto;">
+                        {{ condition_summary.get('redness', 50) }}
+                    </div>
+                    {% if conditions.redness %}
+                        <p class="text-muted small mb-2">
+                            Severity: <strong>{{ conditions.redness[0].severity.title() }}</strong>
+                        </p>
+                    {% endif %}
+                    <p class="small text-muted">Inflammation and erythema</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Detailed Results Table -->

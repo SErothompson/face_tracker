@@ -10,6 +10,7 @@ from PIL import Image
 from app.blueprints.analysis.detectors.acne import AcneDetector
 from app.blueprints.analysis.detectors.dark_spots import DarkSpotsDetector
 from app.blueprints.analysis.detectors.regions import extract_region
+from app.blueprints.analysis.detectors.redness import RednessDetector
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
 from app.blueprints.analysis.detectors.texture import TextureDetector
 from app.blueprints.analysis.detectors.undereye import UnderEyeDetector
@@ -216,6 +217,56 @@ class TestUnderEyeDetector:
         assert 0 <= result["severity"] <= 100
 
 
+class TestRednessDetector:
+    """Test RednessDetector functionality."""
+
+    def test_redness_detector_init(self):
+        """Test detector initialization."""
+        detector = RednessDetector()
+        assert detector is not None
+        assert detector.redness_threshold == 140
+
+    def test_redness_detector_empty_roi(self):
+        """Test detector with empty ROI."""
+        detector = RednessDetector()
+        empty_roi = np.empty((0, 0, 3), dtype=np.uint8)
+        result = detector.detect(empty_roi, None)
+
+        assert result["redness_coverage"] == 0
+        assert result["severity"] == 0
+        assert result["mean_a_channel"] == 128
+        assert result["red_pixel_count"] == 0
+
+    def test_redness_detector_with_roi(self, sample_roi_rgba, sample_roi_mask):
+        """Test detector with sample ROI."""
+        detector = RednessDetector()
+        result = detector.detect(sample_roi_rgba, sample_roi_mask)
+
+        assert isinstance(result, dict)
+        assert "redness_coverage" in result
+        assert "severity" in result
+        assert "mean_a_channel" in result
+        assert "red_pixel_count" in result
+        assert 0 <= result["severity"] <= 100
+        assert 0 <= result["mean_a_channel"] <= 255
+
+    def test_redness_detector_detects_reddish_pixels(self):
+        """Test that detector identifies reddish areas."""
+        # Create ROI with reddish tint (high a-channel)
+        roi = np.zeros((200, 200, 3), dtype=np.uint8)
+        # BGR with high red: (B, G, R) = (100, 100, 200) = reddish
+        roi[:100, :100] = [100, 100, 200]  # Reddish top-left
+        roi[100:, 100:] = [150, 150, 150]  # Neutral bottom-right
+
+        mask = np.ones((200, 200), dtype=np.uint8) * 255
+
+        detector = RednessDetector()
+        result = detector.detect(roi, mask)
+
+        # Should detect more redness in the top-left
+        assert result["red_pixel_count"] > 0
+
+
 class TestSkinHealthScorer:
     """Test SkinHealthScorer functionality."""
 
@@ -353,7 +404,7 @@ class TestAnalysisIntegration:
         db.session.flush()
 
         # Create fake analysis results (one per condition type)
-        for condition_name in ["acne", "texture", "dark_spots", "wrinkles", "under_eye"]:
+        for condition_name in ["acne", "texture", "dark_spots", "wrinkles", "under_eye", "redness"]:
             result = AnalysisResult(
                 session_id=session.id,
                 condition_name=condition_name,
@@ -364,7 +415,7 @@ class TestAnalysisIntegration:
             db.session.add(result)
 
         # Create fake conditions
-        for condition_type in ["acne", "texture", "dark_spots", "wrinkles", "under_eye"]:
+        for condition_type in ["acne", "texture", "dark_spots", "wrinkles", "under_eye", "redness"]:
             condition = SkinCondition(
                 session_id=session.id,
                 condition_type=condition_type,
@@ -382,4 +433,5 @@ class TestAnalysisIntegration:
         assert b"Dark Spots" in response.data
         assert b"Wrinkles" in response.data
         assert b"Under-Eye" in response.data
+        assert b"Redness" in response.data
         assert b"75" in response.data  # Overall score

@@ -49,7 +49,7 @@ def test_face_detection_returns_landmarks(face_detector, test_image_bgr):
     # Real face photos will definitely work.
     if landmarks is not None:
         assert isinstance(landmarks, list)
-        assert len(landmarks) == 468
+        assert len(landmarks) >= 468  # 478 with iris landmarks
         # Check all landmarks are tuples of ints
         for point in landmarks:
             assert isinstance(point, tuple)

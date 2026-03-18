@@ -1,6 +1,9 @@
 import json
 from typing import Optional
 
+import cv2
+import numpy as np
+
 from app.blueprints.analysis.detectors.acne import AcneDetector
 from app.blueprints.analysis.detectors.dark_spots import DarkSpotsDetector
 from app.blueprints.analysis.detectors.face_mesh import FaceMeshDetector
@@ -12,6 +15,21 @@ from app.blueprints.analysis.detectors.undereye import UnderEyeDetector
 from app.blueprints.analysis.detectors.wrinkles import WrinklesDetector
 from app.models import AnalysisResult, Photo, SkinCondition
 from app.extensions import db
+
+# Which detectors to run for each photo angle when face landmarks aren't available.
+# Maps angle -> list of condition names to analyze.
+_FALLBACK_DETECTORS = {
+    "left": ["acne", "dark_spots", "texture", "redness", "wrinkles"],
+    "right": ["acne", "dark_spots", "texture", "redness", "wrinkles"],
+    "three_quarter_left": ["acne", "dark_spots", "texture", "redness", "wrinkles"],
+    "three_quarter_right": ["acne", "dark_spots", "texture", "redness", "wrinkles"],
+    "cheek_left": ["acne", "dark_spots", "texture", "redness"],
+    "cheek_right": ["acne", "dark_spots", "texture", "redness"],
+    "under_eye_left": ["under_eye"],
+    "under_eye_right": ["under_eye"],
+    "chin_up": ["acne", "texture", "redness"],
+    "top_down": ["texture", "dark_spots"],
+}
 
 
 class AnalysisEngine:
@@ -49,7 +67,7 @@ class AnalysisEngine:
         # Step 1: Detect face landmarks
         landmarks = self.face_detector.detect(image_bgr)
         if landmarks is None:
-            return None
+            return self._analyze_fallback(photo, image_bgr)
 
         # Step 2: Extract facial regions
         regions = extract_all_regions(image_bgr, landmarks)
@@ -172,6 +190,65 @@ class AnalysisEngine:
             "condition_details": condition_results,
             "landmarks_detected": len(landmarks),
             "regions_extracted": len(regions),
+        }
+
+    def _center_crop(self, image_bgr):
+        """Extract the center 60% of the image as an ROI with a full mask."""
+        h, w = image_bgr.shape[:2]
+        margin_x = int(w * 0.2)
+        margin_y = int(h * 0.2)
+        roi = image_bgr[margin_y:h - margin_y, margin_x:w - margin_x].copy()
+        mask = np.full(roi.shape[:2], 255, dtype=np.uint8)
+        return roi, mask
+
+    def _analyze_fallback(self, photo: Photo, image_bgr) -> Optional[dict]:
+        """
+        Fallback analysis for photos where face landmarks can't be detected
+        (profiles, close-ups, unusual angles). Runs relevant detectors on
+        the center crop of the image.
+        """
+        detectors_to_run = _FALLBACK_DETECTORS.get(photo.angle) if photo else None
+        if not detectors_to_run:
+            return None
+
+        roi, mask = self._center_crop(image_bgr)
+        condition_results = {}
+
+        detector_map = {
+            "acne": self.acne_detector,
+            "dark_spots": self.dark_spots_detector,
+            "wrinkles": self.wrinkles_detector,
+            "texture": self.texture_detector,
+            "under_eye": self.undereye_detector,
+            "redness": self.redness_detector,
+        }
+
+        for condition_name in detectors_to_run:
+            detector = detector_map.get(condition_name)
+            if detector:
+                result = detector.detect(roi, mask)
+                condition_results[condition_name] = {
+                    "severity": result["severity"],
+                    "details": {"regions": [photo.angle], "scores": [result["severity"]]},
+                }
+
+        if not condition_results:
+            return None
+
+        normalized_scores = {
+            condition: SkinHealthScorer.normalize_condition_score(
+                results["severity"], condition
+            )
+            for condition, results in condition_results.items()
+        }
+        overall_score = SkinHealthScorer.calculate_overall_score(normalized_scores)
+
+        return {
+            "overall_score": overall_score,
+            "condition_scores": normalized_scores,
+            "condition_details": condition_results,
+            "landmarks_detected": 0,
+            "regions_extracted": 0,
         }
 
     def save_analysis(self, session, photo, analysis_result: dict):

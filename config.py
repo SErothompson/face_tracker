@@ -7,7 +7,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB per upload
+    MAX_CONTENT_LENGTH = 192 * 1024 * 1024  # 192 MB (11 photos at up to 16 MB each)
     ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 

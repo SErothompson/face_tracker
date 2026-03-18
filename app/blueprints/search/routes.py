@@ -1,10 +1,10 @@
 import json
 from flask import Blueprint, render_template, jsonify
 from app.models import PhotoSession, SkinCondition, RegimenEntry
-from app.blueprints.search.client import SkinRemedySearcher
+from app.blueprints.search.client import SkinRemedySearcher, PRODUCT_SUGGESTIONS
 from app.extensions import db
 
-search_bp = Blueprint("search", __name__, url_prefix="/search")
+search_bp = Blueprint("search", __name__, url_prefix="/search", template_folder="templates")
 searcher = SkinRemedySearcher()
 
 
@@ -43,14 +43,22 @@ def recommendations(session_id):
         if not search_results:
             search_results = searcher.search_condition_remedies(condition.condition_type)
 
-            # Store results
-            condition.search_results_json = json.dumps(search_results)
-            db.session.commit()
+            # Only cache non-empty results so we can retry later
+            if search_results:
+                condition.search_results_json = json.dumps(search_results)
+                db.session.commit()
+
+        # Get rule-based suggestions as fallback/supplement
+        ingredient_check = searcher.suggest_ingredients_for_condition(
+            condition.condition_type, regimen
+        )
 
         recommendations_data[condition.condition_type] = {
             "condition": condition,
             "search_results": search_results,
-            "severity": condition.severity
+            "severity": condition.severity,
+            "ingredient_check": ingredient_check,
+            "product_suggestion": PRODUCT_SUGGESTIONS.get(condition.condition_type),
         }
 
     return render_template(

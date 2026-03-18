@@ -45,6 +45,8 @@
         {% for condition_name, rec_data in recommendations.items() %}
             {% set condition = rec_data.condition %}
             {% set search_results = rec_data.search_results %}
+            {% set ingredient_check = rec_data.ingredient_check %}
+            {% set product_suggestion = rec_data.product_suggestion %}
             <div class="col-md-6 mb-3">
                 <div class="card">
                     <div class="card-header bg-light">
@@ -79,7 +81,29 @@
                                 View All Remedies
                             </a>
                         {% else %}
-                            <p class="text-muted small">Loading recommendations...</p>
+                            {% if product_suggestion %}
+                                <h6 class="mt-3">Suggested Action:</h6>
+                                <p class="small">{{ product_suggestion }}</p>
+                            {% endif %}
+
+                            {% if ingredient_check and ingredient_check.missing %}
+                                <h6 class="mt-2">Key Ingredients to Look For:</h6>
+                                <ul class="small mb-0">
+                                    {% for ingredient in ingredient_check.missing %}
+                                        <li>{{ ingredient }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+
+                            {% if ingredient_check and ingredient_check.present %}
+                                <p class="small text-success mt-2 mb-0">
+                                    Already in your regimen: {{ ingredient_check.present|join(', ') }}
+                                </p>
+                            {% endif %}
+
+                            {% if not product_suggestion and not (ingredient_check and ingredient_check.missing) %}
+                                <p class="text-muted small">No specific recommendations for this condition.</p>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>

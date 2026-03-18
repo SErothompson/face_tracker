@@ -6,7 +6,7 @@ from app.models import PhotoSession, Photo, AnalysisResult, ComparisonResult
 from app.blueprints.comparison.engine import ComparisonEngine
 from app.extensions import db
 
-comparison_bp = Blueprint("comparison", __name__, url_prefix="/comparison")
+comparison_bp = Blueprint("comparison", __name__, url_prefix="/comparison", template_folder="templates")
 
 
 @comparison_bp.route("/", methods=["GET"])

@@ -33,7 +33,7 @@ def test_upload_page_get(client):
     response = client.get('/sessions/upload')
     assert response.status_code == 200
     assert b'Upload Session' in response.data
-    assert b'Front Photo' in response.data
+    assert b'Front' in response.data  # Check for required angles section
 
 
 def test_upload_missing_photo(client):
@@ -43,7 +43,7 @@ def test_upload_missing_photo(client):
         'photo_front': (create_image_file(), 'front.jpg'),
         'photo_left': (create_image_file(), 'left.jpg'),
     }, follow_redirects=True)
-    assert b'Missing right photo' in response.data
+    assert b'Missing required' in response.data
 
 
 def test_upload_invalid_file_type(client):

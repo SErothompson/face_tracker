@@ -23,6 +23,32 @@ sessions_bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 REQUIRED_ANGLES = ["front", "left", "right"]
+OPTIONAL_ANGLES = [
+    "three_quarter_left",
+    "three_quarter_right",
+    "top_down",
+    "chin_up",
+    "cheek_left",
+    "cheek_right",
+    "under_eye_left",
+    "under_eye_right",
+]
+ALL_ANGLES = REQUIRED_ANGLES + OPTIONAL_ANGLES
+
+# Display names for angles
+ANGLE_LABELS = {
+    "front": "Front",
+    "left": "Left Profile",
+    "right": "Right Profile",
+    "three_quarter_left": "Three-Quarter (Left)",
+    "three_quarter_right": "Three-Quarter (Right)",
+    "top_down": "Top-Down",
+    "chin_up": "Chin-Up",
+    "cheek_left": "Left Cheek Close-Up",
+    "cheek_right": "Right Cheek Close-Up",
+    "under_eye_left": "Left Under-Eye Close-Up",
+    "under_eye_right": "Right Under-Eye Close-Up",
+}
 
 
 def allowed_file(filename):
@@ -42,17 +68,26 @@ def upload():
 
         notes = request.form.get("notes", "").strip()
 
-        # Validate all 3 photos are present and valid
+        # Validate required photos are present and valid
         files = {}
         for angle in REQUIRED_ANGLES:
             f = request.files.get(f"photo_{angle}")
             if not f or f.filename == "":
-                flash(f"Missing {angle} photo.", "danger")
+                flash(f"Missing required {ANGLE_LABELS.get(angle, angle)} photo.", "danger")
                 return redirect(request.url)
             if not allowed_file(f.filename):
-                flash(f"Invalid file type for {angle} photo. Allowed: PNG, JPG, JPEG, WebP.", "danger")
+                flash(f"Invalid file type for {ANGLE_LABELS.get(angle, angle)} photo. Allowed: PNG, JPG, JPEG, WebP.", "danger")
                 return redirect(request.url)
             files[angle] = f
+
+        # Process optional photos
+        for angle in OPTIONAL_ANGLES:
+            f = request.files.get(f"photo_{angle}")
+            if f and f.filename != "":
+                if not allowed_file(f.filename):
+                    flash(f"Invalid file type for {ANGLE_LABELS.get(angle, angle)} photo. Allowed: PNG, JPG, JPEG, WebP.", "danger")
+                    return redirect(request.url)
+                files[angle] = f
 
         # Create session directory
         session_uuid = str(uuid.uuid4())
@@ -114,7 +149,12 @@ def detail(session_id):
     # Group photos by angle
     photos_by_angle = {p.angle: p for p in session.photos}
     return render_template(
-        "sessions/detail.html", session=session, photos_by_angle=photos_by_angle
+        "sessions/detail.html",
+        session=session,
+        photos_by_angle=photos_by_angle,
+        angle_labels=ANGLE_LABELS,
+        required_angles=REQUIRED_ANGLES,
+        optional_angles=OPTIONAL_ANGLES,
     )
 
 

@@ -4,25 +4,32 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const photoInputs = document.querySelectorAll('.photo-input');
+    const optionalPhotoInputs = document.querySelectorAll('.photo-input-optional');
     const submitBtn = document.getElementById('submitBtn');
-    const angles = ['front', 'left', 'right'];
+    const requiredAngles = ['front', 'left', 'right'];
 
-    // Set up event listeners for each photo input
+    // Set up event listeners for required photos
     photoInputs.forEach(input => {
         input.addEventListener('change', function() {
             const angle = this.name.replace('photo_', '');
             handlePhotoSelected(this, angle);
-            checkAllPhotosSelected();
+            checkAllRequiredPhotosSelected();
+        });
+    });
+
+    // Set up event listeners for optional photos
+    optionalPhotoInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const angle = this.name.replace('photo_', '');
+            handlePhotoSelected(this, angle);
         });
     });
 
     function handlePhotoSelected(input, angle) {
         const file = input.files[0];
-        const capitalizedAngle = angle.charAt(0).toUpperCase() + angle.slice(1);
-        const previewDiv = document.getElementById(`preview${capitalizedAngle}`);
-        const placeholderDiv = document.getElementById(`placeholder${capitalizedAngle}`);
-        const imgElement = document.getElementById(`img${capitalizedAngle}`);
-        const infoElement = document.getElementById(`info${capitalizedAngle}`);
+        const previewDiv = document.getElementById(`preview_${angle}`);
+        const placeholderDiv = document.getElementById(`placeholder_${angle}`);
+        const imgElement = document.getElementById(`img_${angle}`);
 
         if (file) {
             // Validate file type
@@ -51,10 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 imgElement.src = e.target.result;
                 previewDiv.style.display = 'block';
                 placeholderDiv.style.display = 'none';
-
-                // Show file info
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                infoElement.textContent = `${file.name} (${sizeMB} MB)`;
             };
             reader.readAsDataURL(file);
         } else {
@@ -64,8 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function checkAllPhotosSelected() {
-        const allSelected = angles.every(angle => {
+    function checkAllRequiredPhotosSelected() {
+        const allSelected = requiredAngles.every(angle => {
             const input = document.querySelector(`input[name="photo_${angle}"]`);
             return input && input.files.length > 0;
         });
@@ -76,14 +79,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Prevent form submission if validation fails
     const form = document.getElementById('uploadForm');
     form.addEventListener('submit', function(e) {
-        const allSelected = angles.every(angle => {
+        const allSelected = requiredAngles.every(angle => {
             const input = document.querySelector(`input[name="photo_${angle}"]`);
             return input && input.files.length > 0;
         });
 
         if (!allSelected) {
             e.preventDefault();
-            alert('Please select all three photos (front, left, right) before uploading.');
+            alert('Please select all three required photos (front, left, right) before uploading.');
         }
     });
 });
+

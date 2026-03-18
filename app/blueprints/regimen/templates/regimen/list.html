@@ -16,71 +16,106 @@
         </div>
     </div>
 
-    <!-- Active Regimen by Time of Day -->
+    <!-- Active Regimen by Section -->
     <div class="mb-5">
         <h3 class="mb-3">Active Routine</h3>
 
-        {% if regimen_by_time %}
-            {% for time, products in regimen_by_time|dictsort %}
+        {% if active_entries %}
+
+            {% macro product_table(products) %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Frequency</th>
+                            <th>Since</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <strong>{{ product.product_name }}</strong>
+                                {% if product.notes %}
+                                <br>
+                                <small class="text-muted">{{ product.notes }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ product.product_type }}</span>
+                            </td>
+                            <td>{{ product.frequency }}</td>
+                            <td>
+                                <small class="text-muted">{{ product.started_on.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('regimen.edit_regimen', regimen_id=product.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <form method="POST"
+                                      action="{{ url_for('regimen.deactivate_regimen', regimen_id=product.id) }}"
+                                      style="display: inline;"
+                                      onsubmit="return confirm('Deactivate this product?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endmacro %}
+
+            <!-- Morning Routine -->
+            {% if am_routine %}
             <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        {% if time == 'AM' %}
-                            🌅 Morning Routine
-                        {% elif time == 'PM' %}
-                            🌙 Evening Routine
-                        {% else %}
-                            📋 As Needed
-                        {% endif %}
-                    </h5>
+                <div class="card-header" style="background-color: #fff3cd;">
+                    <h5 class="mb-0">&#x1F305; Morning Routine (AM)</h5>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Type</th>
-                                    <th>Frequency</th>
-                                    <th>Since</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for product in products %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ product.product_name }}</strong>
-                                        {% if product.notes %}
-                                        <br>
-                                        <small class="text-muted">{{ product.notes }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ product.product_type }}</span>
-                                    </td>
-                                    <td>{{ product.frequency }}</td>
-                                    <td>
-                                        <small class="text-muted">{{ product.started_on.strftime('%b %d, %Y') }}</small>
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{{ url_for('regimen.edit_regimen', regimen_id=product.id) }}"
-                                           class="btn btn-sm btn-outline-secondary">Edit</a>
-                                        <form method="POST"
-                                              action="{{ url_for('regimen.deactivate_regimen', regimen_id=product.id) }}"
-                                              style="display: inline;"
-                                              onsubmit="return confirm('Deactivate this product?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                    {{ product_table(am_routine) }}
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
+
+            <!-- Evening Routine -->
+            {% if pm_routine %}
+            <div class="card mb-3">
+                <div class="card-header" style="background-color: #d1e7fd;">
+                    <h5 class="mb-0">&#x1F319; Evening Routine (PM)</h5>
+                </div>
+                <div class="card-body">
+                    {{ product_table(pm_routine) }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Weekly Treatments -->
+            {% if weekly_treatments %}
+            <div class="card mb-3">
+                <div class="card-header" style="background-color: #d4edda;">
+                    <h5 class="mb-0">&#x1F4C5; Weekly Treatments</h5>
+                </div>
+                <div class="card-body">
+                    {{ product_table(weekly_treatments) }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Supplementary / As Needed -->
+            {% if supplementary %}
+            <div class="card mb-3">
+                <div class="card-header" style="background-color: #e8daef;">
+                    <h5 class="mb-0">&#x1F9F4; Supplementary / As Needed</h5>
+                </div>
+                <div class="card-body">
+                    {{ product_table(supplementary) }}
+                </div>
+            </div>
+            {% endif %}
+
         {% else %}
             <div class="alert alert-info">
                 <strong>No products in regimen yet.</strong>
@@ -89,7 +124,7 @@
         {% endif %}
     </div>
 
-    <!-- Product History (Optional) -->
+    <!-- Product History -->
     {% if inactive_entries %}
     <div class="mb-5">
         <h3 class="mb-3">Product History</h3>
@@ -151,16 +186,16 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <h5 class="card-title text-muted">AM Products</h5>
-                    <div class="display-4">{{ regimen_by_time.get('AM', [])|length }}</div>
+                    <h5 class="card-title text-muted">AM Routine</h5>
+                    <div class="display-4">{{ am_routine|length }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <h5 class="card-title text-muted">PM Products</h5>
-                    <div class="display-4">{{ regimen_by_time.get('PM', [])|length }}</div>
+                    <h5 class="card-title text-muted">PM Routine</h5>
+                    <div class="display-4">{{ pm_routine|length }}</div>
                 </div>
             </div>
         </div>
@@ -168,7 +203,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title text-muted">Treatments</h5>
-                    <div class="display-4">{{ regimen_by_time.get('Anytime', [])|length }}</div>
+                    <div class="display-4">{{ weekly_treatments|length + supplementary|length }}</div>
                 </div>
             </div>
         </div>
@@ -176,7 +211,7 @@
 
     <!-- Info Box -->
     <div class="alert alert-secondary">
-        <h6 class="alert-heading">💡 Tip</h6>
+        <h6 class="alert-heading">&#x1F4A1; Tip</h6>
         <p class="mb-0">Your current regimen is automatically saved as a snapshot each time you upload a new session. This helps track which products you were using at the time of analysis.</p>
     </div>
 </div>

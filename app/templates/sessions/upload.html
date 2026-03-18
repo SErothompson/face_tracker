@@ -6,46 +6,215 @@
 <div class="row mb-4">
     <div class="col">
         <h1>Upload Session</h1>
-        <p class="text-muted">Upload three photos of your face (front, left side, right side) for this week's session.</p>
+        <p class="text-muted">Upload photos of your face for analysis. The three basic angles (front, left, right) are required. Additional detailed angles are optional but help with skin diagnostics.</p>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
         <div class="card">
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
                     <!-- Session Date -->
-                    <div class="mb-3">
-                        <label for="sessionDate" class="form-label">Session Date</label>
+                    <div class="mb-4">
+                        <label for="sessionDate" class="form-label fw-bold">Session Date</label>
                         <input type="date" class="form-control" id="sessionDate" name="session_date" value="{{ today }}" required>
                     </div>
 
-                    <!-- Photo Uploads -->
-                    <div class="row g-3 mb-3">
-                        {% for angle in ['front', 'left', 'right'] %}
-                        <div class="col-md-4">
-                            <label for="photo{{ angle|capitalize }}" class="form-label">
-                                {{ angle|capitalize }} Photo <span class="badge bg-danger">Required</span>
-                            </label>
-                            <input type="file" class="form-control photo-input" id="photo{{ angle|capitalize }}" name="photo_{{ angle }}" accept="image/*" required>
-                            <small class="form-text text-muted">PNG, JPG, JPEG, or WebP (max 16 MB)</small>
+                    <!-- REQUIRED BASIC ANGLES -->
+                    <div class="mb-5">
+                        <h5 class="mb-3">Required Angles (3)</h5>
+                        <div class="row g-3">
+                            {% for angle, label in [('front', 'Front'), ('left', 'Left Profile'), ('right', 'Right Profile')] %}
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <!-- SVG Illustration -->
+                                        <div class="text-center mb-3" id="illustration_{{ angle }}" style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                                            {% if angle == 'front' %}
+                                            <svg width="120" height="140" viewBox="0 0 120 140" style="margin: 0 auto;">
+                                                <!-- Head -->
+                                                <ellipse cx="60" cy="50" rx="35" ry="45" fill="none" stroke="#333" stroke-width="2"/>
+                                                <!-- Eyes -->
+                                                <circle cx="40" cy="40" r="4" fill="#333"/>
+                                                <circle cx="80" cy="40" r="4" fill="#333"/>
+                                                <!-- Nose -->
+                                                <line x1="60" y1="45" x2="60" y2="60" stroke="#333" stroke-width="1.5"/>
+                                                <!-- Mouth -->
+                                                <path d="M 45 75 Q 60 80 75 75" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+                                                <!-- Arrow pointing center -->
+                                                <text x="60" y="130" text-anchor="middle" font-size="12" fill="#666">Face camera directly</text>
+                                                <polygon points="60,115 55,120 65,120" fill="#0066cc"/>
+                                            </svg>
+                                            {% elif angle == 'left' %}
+                                            <svg width="120" height="140" viewBox="0 0 120 140" style="margin: 0 auto;">
+                                                <!-- Head profile -->
+                                                <ellipse cx="70" cy="50" rx="30" ry="45" fill="none" stroke="#333" stroke-width="2"/>
+                                                <!-- Eye -->
+                                                <circle cx="75" cy="40" r="4" fill="#333"/>
+                                                <!-- Nose -->
+                                                <line x1="80" y1="48" x2="90" y2="52" stroke="#333" stroke-width="1.5"/>
+                                                <!-- Mouth -->
+                                                <path d="M 75 70 L 85 72" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+                                                <!-- Arrow -->
+                                                <text x="60" y="130" text-anchor="middle" font-size="12" fill="#666">Look to the right</text>
+                                                <polygon points="35,105 40,100 35,115" fill="#0066cc"/>
+                                            </svg>
+                                            {% elif angle == 'right' %}
+                                            <svg width="120" height="140" viewBox="0 0 120 140" style="margin: 0 auto;">
+                                                <!-- Head profile -->
+                                                <ellipse cx="50" cy="50" rx="30" ry="45" fill="none" stroke="#333" stroke-width="2"/>
+                                                <!-- Eye -->
+                                                <circle cx="45" cy="40" r="4" fill="#333"/>
+                                                <!-- Nose -->
+                                                <line x1="40" y1="48" x2="30" y2="52" stroke="#333" stroke-width="1.5"/>
+                                                <!-- Mouth -->
+                                                <path d="M 45 70 L 35 72" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+                                                <!-- Arrow -->
+                                                <text x="60" y="130" text-anchor="middle" font-size="12" fill="#666">Look to the left</text>
+                                                <polygon points="85,105 80,100 85,115" fill="#0066cc"/>
+                                            </svg>
+                                            {% endif %}
+                                        </div>
 
-                            <!-- Preview -->
-                            <div class="mt-2" id="preview{{ angle|capitalize }}" style="display: none;">
-                                <img id="img{{ angle|capitalize }}" class="img-fluid rounded" style="max-height: 200px;">
-                                <p class="small text-muted mt-1" id="info{{ angle|capitalize }}"></p>
+                                        <label for="photo_{{ angle }}" class="form-label">
+                                            {{ label }} <span class="badge bg-danger">Required</span>
+                                        </label>
+                                        <input type="file" class="form-control photo-input" id="photo_{{ angle }}" name="photo_{{ angle }}" accept="image/*" required>
+                                        <small class="form-text text-muted">PNG, JPG, JPEG, or WebP (max 16 MB)</small>
+
+                                        <!-- Preview -->
+                                        <div class="mt-2" id="preview_{{ angle }}" style="display: none;">
+                                            <img id="img_{{ angle }}" class="img-fluid rounded" style="max-height: 150px;">
+                                        </div>
+                                        <div id="placeholder_{{ angle }}" class="border rounded p-2 text-center text-muted mt-2" style="background: #f8f9fa; min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                                            <span class="small">No image selected</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="placeholder{{ angle|capitalize }}" class="border rounded p-3 text-center text-muted" style="background: #f8f9fa; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-                                <span>No image selected</span>
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+                    </div>
+
+                    <!-- OPTIONAL DETAILED ANGLES -->
+                    <div class="mb-5">
+                        <h5 class="mb-3">Optional Detailed Angles (for enhanced diagnostics)</h5>
+                        <p class="text-muted small mb-3">These angles provide additional detail for more comprehensive skin analysis.</p>
+                        <div class="row g-3">
+                            {% for angle, label in [
+                                ('three_quarter_left', 'Three-Quarter Left'),
+                                ('three_quarter_right', 'Three-Quarter Right'),
+                                ('top_down', 'Top-Down'),
+                                ('chin_up', 'Chin-Up')
+                            ] %}
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100">
+                                    <div class="card-body p-2">
+                                        <!-- SVG Illustration -->
+                                        <div class="text-center mb-2" style="background: #f8f9fa; border-radius: 6px; padding: 10px;">
+                                            {% if angle == 'three_quarter_left' %}
+                                            <svg width="100" height="110" viewBox="0 0 100 110" style="margin: 0 auto;">
+                                                <ellipse cx="50" cy="40" rx="28" ry="35" fill="none" stroke="#333" stroke-width="2"/>
+                                                <circle cx="38" cy="32" r="3" fill="#333"/>
+                                                <circle cx="58" cy="28" r="2.5" fill="#666"/>
+                                                <line x1="52" y1="42" x2="60" y2="46" stroke="#333" stroke-width="1.5"/>
+                                                <text x="50" y="105" text-anchor="middle" font-size="11" fill="#666">45° Left</text>
+                                            </svg>
+                                            {% elif angle == 'three_quarter_right' %}
+                                            <svg width="100" height="110" viewBox="0 0 100 110" style="margin: 0 auto;">
+                                                <ellipse cx="50" cy="40" rx="28" ry="35" fill="none" stroke="#333" stroke-width="2"/>
+                                                <circle cx="62" cy="32" r="3" fill="#333"/>
+                                                <circle cx="42" cy="28" r="2.5" fill="#666"/>
+                                                <line x1="48" y1="42" x2="40" y2="46" stroke="#333" stroke-width="1.5"/>
+                                                <text x="50" y="105" text-anchor="middle" font-size="11" fill="#666">45° Right</text>
+                                            </svg>
+                                            {% elif angle == 'top_down' %}
+                                            <svg width="100" height="110" viewBox="0 0 100 110" style="margin: 0 auto;">
+                                                <ellipse cx="50" cy="35" rx="32" ry="28" fill="none" stroke="#333" stroke-width="2"/>
+                                                <circle cx="38" cy="30" r="3" fill="#333"/>
+                                                <circle cx="62" cy="30" r="3" fill="#333"/>
+                                                <line x1="50" y1="38" x2="50" y2="48" stroke="#333" stroke-width="1.5"/>
+                                                <path d="M 42 48 Q 50 52 58 48" fill="none" stroke="#333" stroke-width="1.5"/>
+                                                <polygon points="50,20 45,15 55,15" fill="#0066cc"/>
+                                                <text x="50" y="105" text-anchor="middle" font-size="11" fill="#666">Camera above</text>
+                                            </svg>
+                                            {% elif angle == 'chin_up' %}
+                                            <svg width="100" height="110" viewBox="0 0 100 110" style="margin: 0 auto;">
+                                                <ellipse cx="50" cy="50" rx="32" ry="28" fill="none" stroke="#333" stroke-width="2"/>
+                                                <circle cx="38" cy="45" r="3" fill="#333"/>
+                                                <circle cx="62" cy="45" r="3" fill="#333"/>
+                                                <line x1="50" y1="48" x2="50" y2="38" stroke="#333" stroke-width="1.5"/>
+                                                <path d="M 40 60 Q 50 56 60 60" fill="none" stroke="#333" stroke-width="1.5"/>
+                                                <polygon points="50,90 45,95 55,95" fill="#0066cc"/>
+                                                <text x="50" y="105" text-anchor="middle" font-size="11" fill="#666">Camera below</text>
+                                            </svg>
+                                            {% endif %}
+                                        </div>
+                                        <label for="photo_{{ angle }}" class="form-label small">{{ label }}</label>
+                                        <input type="file" class="form-control form-control-sm photo-input-optional" id="photo_{{ angle }}" name="photo_{{ angle }}" accept="image/*">
+                                        <small class="form-text text-muted d-block mt-1">PNG, JPG, JPEG, or WebP</small>
+                                        <div id="preview_{{ angle }}" style="display: none; margin-top: 8px;">
+                                            <img id="img_{{ angle }}" class="img-fluid rounded" style="max-height: 100px;">
+                                        </div>
+                                        <div id="placeholder_{{ angle }}" class="border rounded p-1 text-center text-muted mt-2" style="background: #f8f9fa; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                                            No image
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- CLOSE-UP ANGLES -->
+                    <div class="mb-5">
+                        <h5 class="mb-3">Close-Up Details (optional)</h5>
+                        <p class="text-muted small mb-3">Detailed close-ups help identify localized skin conditions.</p>
+                        <div class="row g-3">
+                            {% for angle, label, instruction in [
+                                ('cheek_left', 'Left Cheek', 'Zoom in on left cheek area'),
+                                ('cheek_right', 'Right Cheek', 'Zoom in on right cheek area'),
+                                ('under_eye_left', 'Left Under-Eye', 'Close-up of left under-eye area'),
+                                ('under_eye_right', 'Right Under-Eye', 'Close-up of right under-eye area')
+                            ] %}
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100">
+                                    <div class="card-body p-2">
+                                        <div class="text-center mb-2" style="background: #f8f9fa; border-radius: 6px; padding: 10px;">
+                                            <svg width="90" height="90" viewBox="0 0 90 90" style="margin: 0 auto;">
+                                                <!-- Face outline (partial) -->
+                                                <circle cx="45" cy="45" r="40" fill="none" stroke="#ddd" stroke-width="1"/>
+                                                <!-- Magnifying glass -->
+                                                <circle cx="45" cy="45" r="28" fill="none" stroke="#0066cc" stroke-width="2.5"/>
+                                                <!-- Magnifying glass handle -->
+                                                <line x1="63" y1="63" x2="75" y2="75" stroke="#0066cc" stroke-width="2.5" stroke-linecap="round"/>
+                                                <!-- Detail indicators (skin texture) -->
+                                                <circle cx="35" cy="35" r="1.5" fill="#666"/>
+                                                <circle cx="45" cy="40" r="1.5" fill="#666"/>
+                                                <circle cx="55" cy="35" r="1.5" fill="#666"/>
+                                                <circle cx="40" cy="50" r="1.5" fill="#666"/>
+                                                <circle cx="50" cy="55" r="1.5" fill="#666"/>
+                                            </svg>
+                                        </div>
+                                        <label for="photo_{{ angle }}" class="form-label small">{{ label }}<br><span class="text-muted" style="font-size: 10px;">{{ instruction }}</span></label>
+                                        <input type="file" class="form-control form-control-sm photo-input-optional" id="photo_{{ angle }}" name="photo_{{ angle }}" accept="image/*">
+                                        <div id="preview_{{ angle }}" style="display: none; margin-top: 8px;">
+                                            <img id="img_{{ angle }}" class="img-fluid rounded" style="max-height: 100px;">
+                                        </div>
+                                        <div id="placeholder_{{ angle }}" class="border rounded p-1 text-center text-muted mt-2" style="background: #f8f9fa; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                                            No image
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
 
                     <!-- Notes -->
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Notes (Optional)</label>
+                    <div class="mb-4">
+                        <label for="notes" class="form-label fw-bold">Session Notes (Optional)</label>
                         <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any observations about your skin condition this week..."></textarea>
                     </div>
 
@@ -61,17 +230,17 @@
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card bg-light">
+    <div class="col-lg-3">
+        <div class="card bg-light sticky-top" style="top: 20px;">
             <div class="card-body">
-                <h5 class="card-title">Tips for Best Results</h5>
-                <ul class="small">
-                    <li>Use consistent lighting (natural daylight is best)</li>
-                    <li>Take photos at the same time of day each week</li>
-                    <li>Use the same background each time for consistency</li>
-                    <li>Keep the same distance from the camera</li>
-                    <li>Front photo should show your entire face</li>
-                    <li>Profile photos should clearly show the side of your face</li>
+                <h5 class="card-title">Photography Tips</h5>
+                <ul class="small mb-0">
+                    <li><strong>Lighting:</strong> Use natural daylight or consistent indoor lighting</li>
+                    <li><strong>Time:</strong> Take at same time each week for consistency</li>
+                    <li><strong>Background:</strong> Use the same neutral background</li>
+                    <li><strong>Distance:</strong> Maintain consistent camera distance</li>
+                    <li><strong>Focus:</strong> Ensure face is in sharp focus</li>
+                    <li><strong>Clean face:</strong> Photos after skincare routine applied</li>
                 </ul>
             </div>
         </div>

@@ -4,78 +4,100 @@ from app.extensions import db
 
 
 REGIMEN_SEED_DATA = [
-    # AM Routine (4 products)
+    # AM Routine (7 steps)
     {
         "product_name": "CeraVe Hydrating Cleanser",
         "product_type": "Cleanser",
         "frequency": "Daily",
         "time_of_day": "AM",
-        "notes": "Gentle milk cleanser, twice daily",
+        "notes": "Massage 30 seconds, rinse with lukewarm water",
     },
     {
-        "product_name": "Neutrogena Hydro Boost",
+        "product_name": "The Ordinary Niacinamide 10% + Zinc 1%",
         "product_type": "Serum",
         "frequency": "Daily",
         "time_of_day": "AM",
-        "notes": "Hyaluronic acid serum for hydration",
+        "notes": "A few drops across face; targets redness and uneven tone; niacinamide + zinc",
     },
     {
-        "product_name": "CeraVe Moisturizing Cream (AM)",
+        "product_name": "The Ordinary Alpha Arbutin 2% + Hyaluronic Acid",
+        "product_type": "Serum",
+        "frequency": "Daily",
+        "time_of_day": "AM",
+        "notes": "Apply before Vitamin C, thinner water-based formula goes first; targets dark spots and uneven tone",
+    },
+    {
+        "product_name": "The Ordinary Ascorbyl Glucoside Solution 12%",
+        "product_type": "Serum",
+        "frequency": "Daily",
+        "time_of_day": "AM",
+        "notes": "A few drops after Alpha Arbutin; antioxidant protection, brightening; stable & gentle Vitamin C",
+    },
+    {
+        "product_name": "Neutrogena Hydro Boost Eye Cream",
+        "product_type": "Eye Cream",
+        "frequency": "Daily",
+        "time_of_day": "AM",
+        "notes": "Tap gently with ring finger, never rub",
+    },
+    {
+        "product_name": "CeraVe Moisturizing Cream",
         "product_type": "Moisturizer",
         "frequency": "Daily",
         "time_of_day": "AM",
-        "notes": "Lightweight moisturizer with ceramides",
+        "notes": "Apply evenly across face and neck; ceramides + hyaluronic acid",
     },
     {
-        "product_name": "EltaMD SPF 46",
+        "product_name": "The Ordinary UV Filters SPF 45 Serum Sunscreen",
         "product_type": "SPF/Sunscreen",
         "frequency": "Daily",
         "time_of_day": "AM",
-        "notes": "Daily mineral sunscreen, essential for UV protection",
+        "notes": "Final step every morning even indoors; lightweight broad-spectrum UVA/UVB, no white cast",
     },
-    # PM Routine (3 products)
+    # PM Routine (4 steps)
     {
-        "product_name": "CeraVe Cleanser (PM)",
+        "product_name": "CeraVe Hydrating Cleanser",
         "product_type": "Cleanser",
         "frequency": "Daily",
         "time_of_day": "PM",
-        "notes": "Gentle cleanser to remove makeup and daily buildup",
+        "notes": "Removes daily buildup, preps skin for treatment",
     },
     {
-        "product_name": "CeraVe Retinol Serum",
+        "product_name": "RoC Retinol Correxion Line Smoothing Serum",
         "product_type": "Treatment",
         "frequency": "Daily",
         "time_of_day": "PM",
-        "notes": "Retinol 0.3% for anti-aging, start 2-3x/week if new",
+        "notes": "Start 2-3 nights/week only; builds collagen, reduces wrinkles; avoid eye area",
     },
     {
-        "product_name": "CeraVe Moisturizing Cream (PM)",
+        "product_name": "Neutrogena Hydro Boost Eye Cream",
+        "product_type": "Eye Cream",
+        "frequency": "Daily",
+        "time_of_day": "PM",
+        "notes": "Store in fridge for extra depuffing effect",
+    },
+    {
+        "product_name": "CeraVe Moisturizing Cream",
         "product_type": "Moisturizer",
         "frequency": "Daily",
         "time_of_day": "PM",
-        "notes": "Richer moisturizer for nighttime repair",
+        "notes": "Slightly more generous at night while skin repairs",
     },
-    # Weekly Treatments (3 products)
+    # 2-3x Per Week (Evening - replace retinol on these nights)
     {
-        "product_name": "CeraVe SA Cleanser",
+        "product_name": "The Ordinary Lactic Acid 5% + HA",
         "product_type": "Exfoliant",
         "frequency": "2x/Week",
-        "time_of_day": "Anytime",
-        "notes": "Salicylic acid cleanser for exfoliation, 2x weekly max",
-    },
-    {
-        "product_name": "The Ordinary AHA+BHA Peeling Solution",
-        "product_type": "Treatment",
-        "frequency": "Weekly",
         "time_of_day": "PM",
-        "notes": "Chemical exfoliant peel, once weekly for 10 minutes",
+        "notes": "Apply after cleansing, leave 10 min, rinse off thoroughly then moisturize; never use same night as retinol",
     },
+    # Supplementary / As Needed
     {
-        "product_name": "Freeman Clay Mask",
-        "product_type": "Mask",
-        "frequency": "Weekly",
-        "time_of_day": "Anytime",
-        "notes": "Charcoal clay mask for deep cleaning, 1x weekly",
+        "product_name": "The Ordinary Alpha Arbutin 2% + HA (PM)",
+        "product_type": "Serum",
+        "frequency": "As needed",
+        "time_of_day": "PM",
+        "notes": "Optional on non-retinol evenings after cleansing, before moisturizer; pairs well with Lactic Acid nights",
     },
 ]
 

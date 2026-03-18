@@ -30,7 +30,31 @@ def list_regimen():
         RegimenEntry.ended_on != None
     ).order_by(RegimenEntry.ended_on.desc()).all()
 
-    # Group active entries by time_of_day
+    # Group active entries into 4 sections matching the regimen structure:
+    # Morning Routine, Evening Routine, Weekly Treatments, Supplementary
+    am_routine = []
+    pm_routine = []
+    weekly_treatments = []
+    supplementary = []
+
+    for entry in active_entries:
+        freq = (entry.frequency or "").lower()
+        time = entry.time_of_day or "Anytime"
+
+        if freq in ("daily", "2x/day"):
+            if time == "AM":
+                am_routine.append(entry)
+            elif time == "PM":
+                pm_routine.append(entry)
+            else:
+                supplementary.append(entry)
+        elif freq in ("weekly", "2x/week", "3x/week", "bi-weekly"):
+            weekly_treatments.append(entry)
+        else:
+            # "As needed" and anything else
+            supplementary.append(entry)
+
+    # Also build regimen_by_time for backward compatibility (dashboard, reports)
     regimen_by_time = {}
     for entry in active_entries:
         time = entry.time_of_day or "Anytime"
@@ -40,6 +64,10 @@ def list_regimen():
 
     return render_template(
         "regimen/list.html",
+        am_routine=am_routine,
+        pm_routine=pm_routine,
+        weekly_treatments=weekly_treatments,
+        supplementary=supplementary,
         regimen_by_time=regimen_by_time,
         active_entries=active_entries,
         inactive_entries=inactive_entries,
@@ -97,12 +125,16 @@ def add_regimen():
     product_types = [
         "Cleanser",
         "Toner",
-        "Moisturizer",
         "Serum",
+        "Eye Cream",
+        "Moisturizer",
         "SPF/Sunscreen",
         "Treatment",
+        "Spot Treatment",
         "Mask",
         "Exfoliant",
+        "Occlusive",
+        "Balm/Recovery",
         "Other",
     ]
     frequencies = [
@@ -169,12 +201,16 @@ def edit_regimen(regimen_id):
     product_types = [
         "Cleanser",
         "Toner",
-        "Moisturizer",
         "Serum",
+        "Eye Cream",
+        "Moisturizer",
         "SPF/Sunscreen",
         "Treatment",
+        "Spot Treatment",
         "Mask",
         "Exfoliant",
+        "Occlusive",
+        "Balm/Recovery",
         "Other",
     ]
     frequencies = [

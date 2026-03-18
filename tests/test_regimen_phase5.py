@@ -70,11 +70,11 @@ class TestRegimenSeeding:
 
     def test_seed_data_count(self):
         """Test that seed data contains expected products."""
-        assert len(REGIMEN_SEED_DATA) == 10
+        assert len(REGIMEN_SEED_DATA) == 13
         products = [p["product_name"] for p in REGIMEN_SEED_DATA]
         assert "CeraVe Hydrating Cleanser" in products
-        assert "EltaMD SPF 46" in products
-        assert "The Ordinary AHA+BHA Peeling Solution" in products
+        assert "The Ordinary UV Filters SPF 45 Serum Sunscreen" in products
+        assert "The Ordinary Lactic Acid 5% + HA" in products
 
     def test_seed_data_structure(self):
         """Test that each seed product has required fields."""

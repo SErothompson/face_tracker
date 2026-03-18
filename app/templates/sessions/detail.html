@@ -3,6 +3,11 @@
 {% block title %}Session - Skin Health Tracker{% endblock %}
 
 {% block content %}
+<style>
+    summary {
+        cursor: pointer;
+    }
+</style>
 <div class="row mb-4">
     <div class="col d-flex justify-content-between align-items-center">
         <div>
@@ -21,26 +26,54 @@
     <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0">Photos</h5>
+                <h5 class="mb-0">Photos ({{ session.photos|length }})</h5>
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    {% for angle in ['front', 'left', 'right'] %}
+                <!-- Required Basic Angles -->
+                <h6 class="mb-3">Basic Angles</h6>
+                <div class="row g-3 mb-4">
+                    {% for angle in required_angles %}
                     <div class="col-md-4">
                         <div class="text-center">
                             {% if angle in photos_by_angle %}
                                 {% set photo = photos_by_angle[angle] %}
-                                <img src="{{ url_for('sessions.serve_photo', filepath=photo.filepath) }}" class="img-fluid rounded" alt="{{ angle }} photo">
-                                <p class="text-capitalize small text-muted mt-2">{{ angle }}</p>
+                                <img src="{{ url_for('sessions.serve_photo', filepath=photo.filepath) }}" class="img-fluid rounded" alt="{{ angle_labels.get(angle, angle) }} photo">
+                                <p class="small text-muted mt-2"><strong>{{ angle_labels.get(angle, angle) }}</strong></p>
                             {% else %}
                                 <div class="bg-light rounded p-5 text-center" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
-                                    <span class="text-muted">No {{ angle }} photo</span>
+                                    <span class="text-muted">No {{ angle_labels.get(angle, angle)|lower }} photo</span>
                                 </div>
                             {% endif %}
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+
+                <!-- Optional Extended Angles -->
+                {% set has_optional = [] %}
+                {% for angle in optional_angles %}
+                    {% if angle in photos_by_angle %}
+                        {% if has_optional.append(1) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if has_optional %}
+                <details class="mb-3">
+                    <summary class="cursor-pointer mb-3"><h6 class="mb-0 d-inline">Additional Angles ({{ has_optional|length }})</h6></summary>
+                    <div class="row g-3">
+                        {% for angle in optional_angles %}
+                        {% if angle in photos_by_angle %}
+                            {% set photo = photos_by_angle[angle] %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="text-center">
+                                    <img src="{{ url_for('sessions.serve_photo', filepath=photo.filepath) }}" class="img-fluid rounded" alt="{{ angle_labels.get(angle, angle) }} photo" style="max-height: 250px;">
+                                    <p class="small text-muted mt-2"><strong>{{ angle_labels.get(angle, angle) }}</strong></p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </details>
+                {% endif %}
             </div>
         </div>
 

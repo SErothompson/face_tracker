@@ -1,24 +1,28 @@
 from flask import Blueprint, render_template
+from flask_login import current_user
 from sqlalchemy import func
 
-from app.models import PhotoSession, AnalysisResult, SkinCondition, RegimenEntry
+from app.models import AnalysisResult, PhotoSession, RegimenEntry, SkinCondition
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
+from app.utils import user_regimen_query, user_sessions_query
 
 main_bp = Blueprint("main", __name__)
 
 
 @main_bp.route("/")
 def dashboard():
+    base_query = user_sessions_query()
+
     # Get all recent sessions (for table display)
     recent_sessions = (
-        PhotoSession.query.order_by(PhotoSession.session_date.desc())
+        base_query.order_by(PhotoSession.session_date.desc())
         .limit(5)
         .all()
     )
 
     # Get sessions with analysis results
     sessions_with_analysis = (
-        PhotoSession.query
+        base_query
         .outerjoin(AnalysisResult)
         .group_by(PhotoSession.id)
         .having(func.count(AnalysisResult.id) > 0)
@@ -66,7 +70,8 @@ def dashboard():
 
     # Get active regimen (limit to 5 for dashboard summary)
     active_regimen = (
-        RegimenEntry.query.filter(RegimenEntry.ended_on == None)
+        user_regimen_query()
+        .filter_by(ended_on=None)
         .order_by(RegimenEntry.time_of_day, RegimenEntry.product_name)
         .limit(5)
         .all()

@@ -5,6 +5,7 @@ from datetime import date
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     flash,
     redirect,
@@ -13,11 +14,14 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from flask_login import current_user, login_required
 from PIL import Image
 from werkzeug.utils import secure_filename
 
+from app.blueprints.auth.decorators import role_required
 from app.extensions import db
-from app.models import Photo, PhotoSession
+from app.models import ClinicalNote, Photo, PhotoSession
+from app.utils import can_access_session, user_sessions_query
 
 sessions_bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -56,6 +60,7 @@ def allowed_file(filename):
 
 
 @sessions_bp.route("/upload", methods=["GET", "POST"])
+@role_required("user", "admin", "developer")
 def upload():
     if request.method == "POST":
         # Validate session date
@@ -95,7 +100,9 @@ def upload():
         os.makedirs(session_dir, exist_ok=True)
 
         # Create PhotoSession record
-        photo_session = PhotoSession(session_date=session_date, notes=notes)
+        photo_session = PhotoSession(
+            session_date=session_date, notes=notes, user_id=current_user.id
+        )
         db.session.add(photo_session)
         db.session.flush()  # Get the ID
 
@@ -137,7 +144,7 @@ def upload():
 @sessions_bp.route("/", methods=["GET"])
 def list_sessions():
     page = request.args.get("page", 1, type=int)
-    sessions = PhotoSession.query.order_by(
+    sessions = user_sessions_query().order_by(
         PhotoSession.session_date.desc()
     ).paginate(page=page, per_page=10)
     return render_template("sessions/list.html", sessions=sessions)
@@ -146,6 +153,8 @@ def list_sessions():
 @sessions_bp.route("/<int:session_id>", methods=["GET"])
 def detail(session_id):
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
     # Group photos by angle
     photos_by_angle = {p.angle: p for p in session.photos}
     return render_template(
@@ -159,8 +168,11 @@ def detail(session_id):
 
 
 @sessions_bp.route("/<int:session_id>/delete", methods=["POST"])
+@role_required("user", "admin", "developer")
 def delete(session_id):
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Get the session directory to delete
     if session.photos:
@@ -191,8 +203,36 @@ def delete(session_id):
 @sessions_bp.route("/photo/<path:filepath>", methods=["GET"])
 def serve_photo(filepath):
     """Serve uploaded photos from the uploads directory."""
+    photo = Photo.query.filter_by(filepath=filepath).first()
+    if photo and photo.session:
+        if not can_access_session(photo.session):
+            abort(403)
     try:
         return send_from_directory(current_app.config["UPLOAD_FOLDER"], filepath)
     except FileNotFoundError:
         flash("Photo not found.", "danger")
         return redirect(url_for("sessions.list_sessions"))
+
+
+@sessions_bp.route("/<int:session_id>/clinical-note", methods=["POST"])
+@role_required("dermatologist", "admin", "developer")
+def add_clinical_note(session_id):
+    """Add a clinical note to a session."""
+    session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
+
+    content = request.form.get("content", "").strip()
+    if not content:
+        flash("Note content is required.", "danger")
+        return redirect(url_for("sessions.detail", session_id=session_id))
+
+    note = ClinicalNote(
+        session_id=session_id,
+        author_id=current_user.id,
+        content=content,
+    )
+    db.session.add(note)
+    db.session.commit()
+    flash("Clinical note added.", "success")
+    return redirect(url_for("sessions.detail", session_id=session_id))

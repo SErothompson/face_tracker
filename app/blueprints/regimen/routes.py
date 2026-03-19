@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from datetime import datetime, date
+from flask_login import current_user, login_required
 
+from app.blueprints.auth.decorators import role_required
 from app.models import RegimenEntry
 from app.extensions import db
+from app.utils import user_regimen_query
 
 regimen_bp = Blueprint(
     "regimen",
@@ -21,12 +24,12 @@ def list_regimen():
         Rendered template with products grouped by AM/PM/weekly
     """
     # Get all active regimen entries (ended_on is NULL)
-    active_entries = RegimenEntry.query.filter(
+    active_entries = user_regimen_query().filter(
         RegimenEntry.ended_on == None
     ).order_by(RegimenEntry.time_of_day, RegimenEntry.product_name).all()
 
     # Get all inactive entries for history display (optional)
-    inactive_entries = RegimenEntry.query.filter(
+    inactive_entries = user_regimen_query().filter(
         RegimenEntry.ended_on != None
     ).order_by(RegimenEntry.ended_on.desc()).all()
 
@@ -75,6 +78,7 @@ def list_regimen():
 
 
 @regimen_bp.route("/add", methods=["GET", "POST"])
+@role_required("user", "admin", "developer")
 def add_regimen():
     """
     Add a new skincare product to the regimen.
@@ -109,6 +113,7 @@ def add_regimen():
                 time_of_day=time_of_day,
                 started_on=date.today(),
                 notes=notes,
+                user_id=current_user.id,
             )
             db.session.add(entry)
             db.session.commit()
@@ -157,6 +162,7 @@ def add_regimen():
 
 
 @regimen_bp.route("/<int:regimen_id>/edit", methods=["GET", "POST"])
+@role_required("user", "admin", "developer")
 def edit_regimen(regimen_id):
     """
     Edit an existing skincare product.
@@ -171,6 +177,8 @@ def edit_regimen(regimen_id):
         Rendered form (GET) or redirect to list (POST)
     """
     entry = RegimenEntry.query.get_or_404(regimen_id)
+    if not current_user.has_role("admin", "developer") and entry.user_id != current_user.id:
+        abort(403)
 
     if request.method == "POST":
         try:
@@ -234,6 +242,7 @@ def edit_regimen(regimen_id):
 
 
 @regimen_bp.route("/<int:regimen_id>/deactivate", methods=["POST"])
+@role_required("user", "admin", "developer")
 def deactivate_regimen(regimen_id):
     """
     Deactivate a skincare product (soft delete by setting end date).
@@ -245,6 +254,8 @@ def deactivate_regimen(regimen_id):
         Redirect to regimen list
     """
     entry = RegimenEntry.query.get_or_404(regimen_id)
+    if not current_user.has_role("admin", "developer") and entry.user_id != current_user.id:
+        abort(403)
 
     try:
         entry.ended_on = date.today()

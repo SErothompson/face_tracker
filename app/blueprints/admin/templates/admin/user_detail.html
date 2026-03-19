@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}User: {{ user.username }} - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>User: {{ user.username }}</h2>
+    <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary btn-sm">Back to Users</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Profile</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><th>Username</th><td>{{ user.username }}</td></tr>
+                    <tr>
+                        <th>Role</th>
+                        <td>
+                            {% set role_colors = {
+                                'admin': 'danger', 'developer': 'warning',
+                                'dermatologist': 'info', 'user': 'primary', 'viewer': 'secondary'
+                            } %}
+                            <span class="badge bg-{{ role_colors.get(user.role, 'secondary') }}">
+                                {{ user.role | capitalize }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr><th>Status</th><td>{{ "Active" if user.is_active else "Disabled" }}</td></tr>
+                    <tr><th>Member Since</th><td>{{ user.created_at.strftime('%B %d, %Y') }}</td></tr>
+                    <tr><th>Sessions</th><td>{{ user.sessions.count() }}</td></tr>
+                    <tr><th>Regimen Items</th><td>{{ user.regimen_entries.count() }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        {% if current_user.has_role('admin') %}
+        <div class="card mb-3">
+            <div class="card-header"><h5 class="mb-0">Change Role</h5></div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.change_role', user_id=user.id) }}">
+                    <div class="input-group">
+                        <select name="role" class="form-select">
+                            {% for role in valid_roles %}
+                            <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>
+                                {{ role | capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Account Status</h5></div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.toggle_active', user_id=user.id) }}">
+                    {% if user.is_active %}
+                        <p>This account is currently <strong class="text-success">active</strong>.</p>
+                        <button type="submit" class="btn btn-warning">Disable Account</button>
+                    {% else %}
+                        <p>This account is currently <strong class="text-danger">disabled</strong>.</p>
+                        <button type="submit" class="btn btn-success">Enable Account</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if assignments %}
+<div class="card mt-4">
+    <div class="card-header"><h5 class="mb-0">Patient Assignments</h5></div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <thead><tr><th>Dermatologist</th><th>Patient</th><th>Assigned</th></tr></thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr>
+                    <td>{{ a.dermatologist.username }}</td>
+                    <td>{{ a.patient.username }}</td>
+                    <td>{{ a.assigned_at.strftime('%b %d, %Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

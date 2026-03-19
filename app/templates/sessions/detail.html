@@ -178,4 +178,38 @@
         </div>
     </div>
 </div>
+
+{% if current_user.has_role('dermatologist', 'admin', 'developer') %}
+<!-- Clinical Notes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Clinical Notes</h5>
+                <span class="badge bg-info">{{ session.clinical_notes.count() }}</span>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('sessions.add_clinical_note', session_id=session.id) }}" class="mb-3">
+                    <div class="mb-2">
+                        <textarea class="form-control" name="content" rows="3"
+                                  placeholder="Add a clinical note..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Add Note</button>
+                </form>
+                {% for note in session.clinical_notes.order_by(none)|sort(attribute='created_at', reverse=true) %}
+                <div class="border-top pt-2 mt-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ note.author.username }}</strong>
+                        <small class="text-muted">{{ note.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                    </div>
+                    <p class="mb-1">{{ note.content }}</p>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No clinical notes yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

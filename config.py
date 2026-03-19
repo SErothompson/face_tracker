@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -6,6 +7,8 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    REMEMBER_COOKIE_DURATION = timedelta(days=30)
+    SESSION_PROTECTION = "strong"
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
     MAX_CONTENT_LENGTH = 192 * 1024 * 1024  # 192 MB (11 photos at up to 16 MB each)
     ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <h2>Profile</h2>
+        <div class="card shadow-sm mt-3">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th class="text-muted" style="width: 40%">Username</th>
+                        <td>{{ current_user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Role</th>
+                        <td>
+                            {% set role_colors = {
+                                'admin': 'danger',
+                                'developer': 'warning',
+                                'dermatologist': 'info',
+                                'user': 'primary',
+                                'viewer': 'secondary'
+                            } %}
+                            <span class="badge bg-{{ role_colors.get(current_user.role, 'secondary') }}">
+                                {{ current_user.role | capitalize }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Member Since</th>
+                        <td>{{ current_user.created_at.strftime('%B %d, %Y') }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Account Status</th>
+                        <td>
+                            {% if current_user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Disabled</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

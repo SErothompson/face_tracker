@@ -102,12 +102,16 @@ REGIMEN_SEED_DATA = [
 ]
 
 
-def seed_regimen():
+def seed_regimen(user_id=None):
     """
     Seed the database with the user's current skincare regimen.
 
     Only imports products if the database is empty (prevents duplicates).
     Products are marked as started today.
+
+    Args:
+        user_id: Optional user ID to associate products with. If None,
+                 products are created without a user association.
     """
     # Check if products already exist
     existing_count = RegimenEntry.query.count()
@@ -125,6 +129,7 @@ def seed_regimen():
             time_of_day=product_data["time_of_day"],
             started_on=date.today(),
             notes=product_data.get("notes", ""),
+            user_id=user_id,
         )
         db.session.add(entry)
 

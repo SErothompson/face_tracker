@@ -4,8 +4,10 @@ import cv2
 
 from app.blueprints.analysis.engine import AnalysisEngine
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
+from app.blueprints.auth.decorators import role_required
 from app.models import PhotoSession, Photo, AnalysisResult, SkinCondition
 from app.extensions import db
+from app.utils import can_access_session
 
 analysis_bp = Blueprint(
     "analysis",
@@ -16,6 +18,7 @@ analysis_bp = Blueprint(
 
 
 @analysis_bp.route("/run/<int:session_id>", methods=["POST"])
+@role_required("user", "admin", "developer")
 def run_analysis(session_id):
     """
     Trigger analysis for all photos in a session.
@@ -27,6 +30,8 @@ def run_analysis(session_id):
         Redirect to analysis results page or error flash
     """
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Initialize engine
     engine = AnalysisEngine()
@@ -82,6 +87,8 @@ def analysis_results(session_id):
         Rendered results template
     """
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Get analysis results
     results = AnalysisResult.query.filter_by(session_id=session_id).all()

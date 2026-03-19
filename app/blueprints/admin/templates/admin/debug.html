@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Debug Info - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Debug Information</h2>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Admin</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Database Statistics</h5></div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <tbody>
+                {% for key, val in db_stats.items() %}
+                <tr><th>{{ key | replace('_', ' ') | title }}</th><td>{{ val }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5 class="mb-0">Application Configuration</h5></div>
+    <div class="card-body">
+        <table class="table table-sm table-striped" style="font-size: 0.85em;">
+            <thead><tr><th>Key</th><th>Value</th></tr></thead>
+            <tbody>
+                {% for key, val in config_items.items() %}
+                <tr>
+                    <td><code>{{ key }}</code></td>
+                    <td style="word-break: break-all; max-width: 500px;">{{ val }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

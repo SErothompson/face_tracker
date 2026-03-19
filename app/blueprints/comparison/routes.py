@@ -1,10 +1,11 @@
 import cv2
 import os
 import io
-from flask import Blueprint, render_template, request, redirect, url_for, send_file
+from flask import Blueprint, abort, render_template, request, redirect, url_for, send_file
 from app.models import PhotoSession, Photo, AnalysisResult, ComparisonResult
 from app.blueprints.comparison.engine import ComparisonEngine
 from app.extensions import db
+from app.utils import can_access_session, user_sessions_query
 
 comparison_bp = Blueprint("comparison", __name__, url_prefix="/comparison", template_folder="templates")
 
@@ -17,7 +18,7 @@ def select_sessions():
     """
     # Get sessions with analysis
     sessions_with_analysis = (
-        PhotoSession.query
+        user_sessions_query()
         .filter(PhotoSession.analysis_results.any())
         .order_by(PhotoSession.session_date.desc())
         .all()
@@ -73,6 +74,9 @@ def view_results(session_a_id, session_b_id):
     # Load sessions
     session_a = PhotoSession.query.get_or_404(session_a_id)
     session_b = PhotoSession.query.get_or_404(session_b_id)
+
+    if not can_access_session(session_a) or not can_access_session(session_b):
+        abort(403)
 
     # Verify both have analysis
     if not session_a.analysis_results or not session_b.analysis_results:

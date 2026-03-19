@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Assignments - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Patient-Dermatologist Assignments</h2>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Admin</a>
+</div>
+
+{% if current_user.has_role('admin') %}
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">New Assignment</h5></div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.create_assignment') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Dermatologist</label>
+                <select name="dermatologist_id" class="form-select" required>
+                    <option value="">Select...</option>
+                    {% for d in dermatologists %}
+                    <option value="{{ d.id }}">{{ d.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Patient</label>
+                <select name="patient_id" class="form-select" required>
+                    <option value="">Select...</option>
+                    {% for p in patients %}
+                    <option value="{{ p.id }}">{{ p.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Notes</label>
+                <input type="text" name="notes" class="form-control" placeholder="Optional">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Assign</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        {% if assignments %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Dermatologist</th>
+                    <th>Patient</th>
+                    <th>Assigned</th>
+                    <th>Notes</th>
+                    {% if current_user.has_role('admin') %}<th>Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr>
+                    <td>{{ a.dermatologist.username }}</td>
+                    <td>{{ a.patient.username }}</td>
+                    <td>{{ a.assigned_at.strftime('%b %d, %Y') }}</td>
+                    <td>{{ a.notes or '-' }}</td>
+                    {% if current_user.has_role('admin') %}
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.delete_assignment', assignment_id=a.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-outline-danger">Remove</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted mb-0">No assignments yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

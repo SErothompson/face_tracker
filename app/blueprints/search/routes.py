@@ -1,8 +1,9 @@
 import json
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, abort, render_template, jsonify
 from app.models import PhotoSession, SkinCondition, RegimenEntry
 from app.blueprints.search.client import SkinRemedySearcher, PRODUCT_SUGGESTIONS
 from app.extensions import db
+from app.utils import can_access_session, user_regimen_query
 
 search_bp = Blueprint("search", __name__, url_prefix="/search", template_folder="templates")
 searcher = SkinRemedySearcher()
@@ -14,6 +15,8 @@ def recommendations(session_id):
     Display recommendations for a session based on detected conditions.
     """
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Get all conditions for this session
     conditions = SkinCondition.query.filter_by(session_id=session_id).all()
@@ -22,7 +25,7 @@ def recommendations(session_id):
         return "No analysis results found for this session.", 404
 
     # Get active regimen at time of session (or current active regimen)
-    regimen = RegimenEntry.query.filter(
+    regimen = user_regimen_query().filter(
         RegimenEntry.ended_on == None
     ).order_by(RegimenEntry.product_name).all()
 
@@ -76,6 +79,8 @@ def condition_detail(session_id, condition_name):
     Display detailed remedies for a specific condition.
     """
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
     condition = SkinCondition.query.filter_by(
         session_id=session_id,
         condition_type=condition_name
@@ -95,7 +100,7 @@ def condition_detail(session_id, condition_name):
         condition.search_results_json = json.dumps(search_results)
         db.session.commit()
 
-    regimen = RegimenEntry.query.filter(
+    regimen = user_regimen_query().filter(
         RegimenEntry.ended_on == None
     ).all()
 

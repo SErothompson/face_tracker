@@ -3,6 +3,7 @@ from datetime import date
 from sqlalchemy import func
 from app.models import PhotoSession, AnalysisResult, SkinCondition
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
+from app.utils import can_access_session, user_sessions_query
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -15,7 +16,7 @@ def trends():
     """
     # Get all sessions with analysis results, ordered by date
     sessions = (
-        PhotoSession.query
+        user_sessions_query()
         .outerjoin(AnalysisResult)
         .group_by(PhotoSession.id)
         .having(func.count(AnalysisResult.id) > 0)
@@ -56,6 +57,9 @@ def session_breakdown(session_id):
 
     if not session:
         return jsonify({"error": "Session not found"}), 404
+
+    if not can_access_session(session):
+        return jsonify({"error": "Access denied"}), 403
 
     # Get analysis results for this session
     results = AnalysisResult.query.filter_by(session_id=session_id).all()
@@ -105,7 +109,7 @@ def sessions_summary():
     Returns summary statistics: total_sessions, avg_score, best_score, worst_score, total_conditions_detected.
     """
     # Get all sessions
-    all_sessions = PhotoSession.query.all()
+    all_sessions = user_sessions_query().all()
     total_sessions = len(all_sessions)
 
     if total_sessions == 0:
@@ -118,7 +122,10 @@ def sessions_summary():
         })
 
     # Get all analysis results for sessions with analysis
-    all_results = AnalysisResult.query.all()
+    session_ids = [s.id for s in all_sessions]
+    all_results = AnalysisResult.query.filter(
+        AnalysisResult.session_id.in_(session_ids)
+    ).all() if session_ids else []
 
     if not all_results:
         return jsonify({

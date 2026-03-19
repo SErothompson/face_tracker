@@ -1,7 +1,8 @@
 import io
-from flask import Blueprint, render_template, send_file
+from flask import Blueprint, abort, render_template, send_file
 from app.models import PhotoSession
 from app.blueprints.reports.generators import ReportGenerator
+from app.utils import can_access_session
 
 reports_bp = Blueprint(
     "reports",
@@ -15,6 +16,8 @@ reports_bp = Blueprint(
 def view_html_report(session_id):
     """Display HTML report (printable in browser)."""
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Gather all data
     session_data = ReportGenerator.gather_session_data(session_id)
@@ -30,6 +33,8 @@ def view_html_report(session_id):
 def download_pdf_report(session_id):
     """Generate and download PDF report."""
     session = PhotoSession.query.get_or_404(session_id)
+    if not can_access_session(session):
+        abort(403)
 
     # Gather all data
     session_data = ReportGenerator.gather_session_data(session_id)

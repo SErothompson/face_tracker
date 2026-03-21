@@ -1,6 +1,6 @@
 # face_tracker
 
-[![CI](https://github.com/SErothompson/face_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/SErothompson/face_tracker/actions)
+[![CI](https://github.com/SErothompson/face_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/SErothompson/face_tracker/actions) [![Codecov](https://codecov.io/gh/SErothompson/face_tracker/branch/master/graph/badge.svg)](https://codecov.io/gh/SErothompson/face_tracker)
 
 Face Tracker — a Flask-based Python application for facial tracking and analysis.
 

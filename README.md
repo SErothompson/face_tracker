@@ -1,5 +1,7 @@
 # face_tracker
 
+[![CI](https://github.com/SErothompson/face_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/SErothompson/face_tracker/actions)
+
 Face Tracker — a Flask-based Python application for facial tracking and analysis.
 
 ## Overview
@@ -61,6 +63,26 @@ Build and run with docker-compose:
 docker-compose build
 docker-compose up
 ```
+
+### Docker quickstart
+
+Build the image and run a container (example):
+
+```bash
+# build image locally
+docker build -t face-tracker:latest .
+
+# run with an env file and port mapping
+docker run --rm -p 5000:5000 --env-file .env -v "$PWD/uploads":/app/uploads face-tracker:latest
+```
+
+Using `docker-compose` (recommended for development):
+
+```bash
+docker-compose up --build
+```
+
+Note: ensure you copy `.env.example` to `.env` and set required variables before running containers.
 
 ## Tests
 

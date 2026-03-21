@@ -2,6 +2,9 @@
 
 from app.models import User
 
+# A password that satisfies all strength requirements
+STRONG_PASSWORD = "T3st!Pass#99"
+
 
 class TestLogin:
     """Test login flow."""
@@ -65,6 +68,42 @@ class TestLogin:
         assert response.status_code == 200
         assert b"Dashboard" in response.data
 
+    def test_login_rejects_external_redirect(self, app, db):
+        """Verify open redirect is prevented."""
+        user = User(username="rediruser", role="user")
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.commit()
+
+        client = app.test_client()
+        response = client.post("/auth/login?next=http://evil.com", data={
+            "username": "rediruser",
+            "password": "password123",
+        })
+        assert response.status_code == 302
+        assert "evil.com" not in response.headers["Location"]
+
+    def test_account_lockout_after_failed_attempts(self, app, db):
+        """Verify account locks after too many failed attempts."""
+        user = User(username="lockuser", role="user")
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.commit()
+
+        client = app.test_client()
+        for _ in range(5):
+            client.post("/auth/login", data={
+                "username": "lockuser",
+                "password": "wrong",
+            })
+
+        # 6th attempt should show locked message
+        response = client.post("/auth/login", data={
+            "username": "lockuser",
+            "password": "password123",
+        }, follow_redirects=True)
+        assert b"locked" in response.data.lower()
+
 
 class TestRegister:
     """Test registration flow."""
@@ -84,8 +123,8 @@ class TestRegister:
         client = app.test_client()
         response = client.post("/auth/register", data={
             "username": "newuser",
-            "password": "password123",
-            "confirm_password": "password123",
+            "password": STRONG_PASSWORD,
+            "confirm_password": STRONG_PASSWORD,
         }, follow_redirects=True)
         assert response.status_code == 200
 
@@ -102,12 +141,12 @@ class TestRegister:
 
         response = unauthenticated_client.post("/auth/register", data={
             "username": "ab",
-            "password": "password123",
-            "confirm_password": "password123",
+            "password": STRONG_PASSWORD,
+            "confirm_password": STRONG_PASSWORD,
         }, follow_redirects=True)
         assert b"at least 3" in response.data
 
-    def test_register_short_password(self, unauthenticated_client, db):
+    def test_register_weak_password(self, unauthenticated_client, db):
         admin = User(username="admin_seed2", role="admin")
         admin.set_password("password123")
         db.session.add(admin)
@@ -118,7 +157,7 @@ class TestRegister:
             "password": "short",
             "confirm_password": "short",
         }, follow_redirects=True)
-        assert b"at least 8" in response.data
+        assert b"at least 10" in response.data
 
     def test_register_password_mismatch(self, unauthenticated_client, db):
         admin = User(username="admin_seed3", role="admin")
@@ -128,8 +167,8 @@ class TestRegister:
 
         response = unauthenticated_client.post("/auth/register", data={
             "username": "newuser3",
-            "password": "password123",
-            "confirm_password": "different456",
+            "password": STRONG_PASSWORD,
+            "confirm_password": "DifferentP@ss1!",
         }, follow_redirects=True)
         assert b"do not match" in response.data
 
@@ -141,8 +180,8 @@ class TestRegister:
 
         response = unauthenticated_client.post("/auth/register", data={
             "username": "taken_name",
-            "password": "password123",
-            "confirm_password": "password123",
+            "password": STRONG_PASSWORD,
+            "confirm_password": STRONG_PASSWORD,
         }, follow_redirects=True)
         assert b"already taken" in response.data
 
@@ -188,8 +227,8 @@ class TestFirstRunSetup:
         client = app.test_client()
         response = client.post("/auth/setup", data={
             "username": "firstadmin",
-            "password": "password123",
-            "confirm_password": "password123",
+            "password": STRONG_PASSWORD,
+            "confirm_password": STRONG_PASSWORD,
         }, follow_redirects=True)
         assert response.status_code == 200
 
@@ -223,7 +262,7 @@ class TestCreateAdminCLI:
         result = runner.invoke(args=[
             "create-admin",
             "--username", "cliadmin",
-            "--password", "password123",
+            "--password", STRONG_PASSWORD,
         ])
         assert "created successfully" in result.output
 
@@ -231,14 +270,14 @@ class TestCreateAdminCLI:
         assert user is not None
         assert user.role == "admin"
 
-    def test_create_admin_short_password(self, app, db):
+    def test_create_admin_weak_password(self, app, db):
         runner = app.test_cli_runner()
         result = runner.invoke(args=[
             "create-admin",
             "--username", "badpass",
             "--password", "short",
         ])
-        assert "at least 8" in result.output
+        assert "at least 10" in result.output
 
     def test_create_admin_duplicate(self, app, db):
         user = User(username="dupeadmin", role="admin")
@@ -250,7 +289,7 @@ class TestCreateAdminCLI:
         result = runner.invoke(args=[
             "create-admin",
             "--username", "dupeadmin",
-            "--password", "password123",
+            "--password", STRONG_PASSWORD,
         ])
         assert "already exists" in result.output
 

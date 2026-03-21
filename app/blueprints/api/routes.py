@@ -3,12 +3,14 @@ from datetime import date
 from sqlalchemy import func
 from app.models import PhotoSession, AnalysisResult, SkinCondition
 from app.blueprints.analysis.detectors.scoring import SkinHealthScorer
+from app.security import limiter
 from app.utils import can_access_session, user_sessions_query
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 @api_bp.route("/trends", methods=["GET"])
+@limiter.limit("30 per minute")
 def trends():
     """
     Returns array of {date, overall_score} for all sessions with analysis.
@@ -48,6 +50,7 @@ def trends():
 
 
 @api_bp.route("/session/<int:session_id>/breakdown", methods=["GET"])
+@limiter.limit("30 per minute")
 def session_breakdown(session_id):
     """
     Returns {overall_score, conditions: {name: {score, severity}}} for a specific session.
@@ -104,6 +107,7 @@ def session_breakdown(session_id):
 
 
 @api_bp.route("/sessions/summary", methods=["GET"])
+@limiter.limit("30 per minute")
 def sessions_summary():
     """
     Returns summary statistics: total_sessions, avg_score, best_score, worst_score, total_conditions_detected.

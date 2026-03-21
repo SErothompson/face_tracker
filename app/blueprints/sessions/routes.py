@@ -135,7 +135,8 @@ def upload():
             db.session.rollback()
             # Clean up directory
             shutil.rmtree(session_dir, ignore_errors=True)
-            flash(f"Error saving session: {str(e)}", "danger")
+            current_app.logger.exception("Error saving session")
+            flash("An error occurred while saving the session. Please try again.", "danger")
             return redirect(request.url)
 
     return render_template("sessions/upload.html", today=date.today().isoformat())
@@ -193,7 +194,8 @@ def delete(session_id):
         try:
             shutil.rmtree(session_dir)
         except Exception as e:
-            flash(f"Session deleted from database but files could not be removed: {str(e)}", "warning")
+            current_app.logger.exception("Error deleting session files")
+            flash("Session deleted from database but files could not be removed.", "warning")
             return redirect(url_for("sessions.list_sessions"))
 
     flash("Session deleted successfully.", "success")

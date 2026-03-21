@@ -22,6 +22,7 @@
                 <div class="card-body">
                     {% if sessions %}
                     <form method="POST" action="{{ url_for('comparison.process_selection') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <!-- Baseline Session -->
                         <div class="mb-3">
                             <label for="session_a_id" class="form-label">Baseline Session (Earlier)*</label>

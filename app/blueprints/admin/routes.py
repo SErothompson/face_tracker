@@ -1,19 +1,29 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
+from app.audit import log_event
 from app.blueprints.auth.decorators import role_required
 from app.extensions import db
 from app.models import (
+    AuditLog,
     ClinicalNote,
     PatientAssignment,
     PhotoSession,
     RegimenEntry,
     User,
 )
+from app.security import check_admin_ip_allowed
 
 admin_bp = Blueprint(
     "admin", __name__, url_prefix="/admin", template_folder="templates"
 )
+
+
+@admin_bp.before_request
+def check_admin_ip():
+    """Restrict admin panel access by IP allowlist."""
+    if not check_admin_ip_allowed():
+        abort(403)
 
 
 @admin_bp.route("/")
@@ -72,8 +82,10 @@ def change_role(user_id):
     if user.id == current_user.id:
         flash("You cannot change your own role.", "danger")
         return redirect(url_for("admin.user_detail", user_id=user_id))
+    old_role = user.role
     user.role = new_role
     db.session.commit()
+    log_event("role_change", f"user={user.username} old={old_role} new={new_role}")
     flash(f"Role for '{user.username}' changed to '{new_role}'.", "success")
     return redirect(url_for("admin.user_detail", user_id=user_id))
 
@@ -89,6 +101,7 @@ def toggle_active(user_id):
     user.is_active_flag = not user.is_active_flag
     db.session.commit()
     status = "enabled" if user.is_active_flag else "disabled"
+    log_event("account_toggle", f"user={user.username} status={status}")
     flash(f"Account '{user.username}' {status}.", "success")
     return redirect(url_for("admin.user_detail", user_id=user_id))
 
@@ -134,6 +147,7 @@ def create_assignment():
     )
     db.session.add(assignment)
     db.session.commit()
+    log_event("assignment_created", f"derm_id={derm_id} patient_id={patient_id}")
     flash("Assignment created.", "success")
     return redirect(url_for("admin.list_assignments"))
 
@@ -143,22 +157,38 @@ def create_assignment():
 def delete_assignment(assignment_id):
     """Remove a patient-dermatologist assignment."""
     assignment = PatientAssignment.query.get_or_404(assignment_id)
+    log_event(
+        "assignment_deleted",
+        f"derm_id={assignment.dermatologist_id} patient_id={assignment.patient_id}",
+    )
     db.session.delete(assignment)
     db.session.commit()
     flash("Assignment removed.", "success")
     return redirect(url_for("admin.list_assignments"))
 
 
+@admin_bp.route("/audit-log")
+@role_required("admin")
+def audit_log():
+    """View audit log entries."""
+    page = request.args.get("page", 1, type=int)
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).paginate(
+        page=page, per_page=50
+    )
+    return render_template("admin/audit_log.html", logs=logs)
+
+
 @admin_bp.route("/debug")
 @role_required("developer")
 def debug_info():
-    """Display debug information for developers."""
-    from flask import current_app
+    """Display debug information for developers (development mode only)."""
+    if not current_app.debug:
+        abort(404)
 
     config_items = {}
     for key in sorted(current_app.config):
         val = current_app.config[key]
-        if "SECRET" in key or "PASSWORD" in key:
+        if "SECRET" in key or "PASSWORD" in key or "KEY" in key:
             config_items[key] = "********"
         else:
             config_items[key] = str(val)

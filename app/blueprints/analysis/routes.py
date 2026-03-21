@@ -1,5 +1,6 @@
 import os
-from flask import Blueprint, render_template, redirect, url_for, flash, abort
+import logging
+from flask import Blueprint, current_app, render_template, redirect, url_for, flash, abort
 import cv2
 
 from app.blueprints.analysis.engine import AnalysisEngine
@@ -68,7 +69,8 @@ def run_analysis(session_id):
         return redirect(url_for("analysis.analysis_results", session_id=session_id))
 
     except Exception as e:
-        flash(f"Analysis failed: {str(e)}", "error")
+        current_app.logger.exception("Analysis failed")
+        flash("Analysis failed. Please try again.", "error")
         return redirect(url_for("sessions.detail", session_id=session_id))
 
     finally:

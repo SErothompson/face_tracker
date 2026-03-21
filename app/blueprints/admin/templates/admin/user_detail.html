@@ -41,6 +41,7 @@
             <div class="card-header"><h5 class="mb-0">Change Role</h5></div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('admin.change_role', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="input-group">
                         <select name="role" class="form-select">
                             {% for role in valid_roles %}
@@ -59,6 +60,7 @@
             <div class="card-header"><h5 class="mb-0">Account Status</h5></div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('admin.toggle_active', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     {% if user.is_active %}
                         <p>This account is currently <strong class="text-success">active</strong>.</p>
                         <button type="submit" class="btn btn-warning">Disable Account</button>

@@ -18,6 +18,16 @@ class User(UserMixin, db.Model):
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
 
+    # Account lockout fields
+    failed_login_attempts = db.Column(db.Integer, default=0, nullable=False)
+    locked_until = db.Column(db.DateTime, nullable=True)
+    last_failed_login = db.Column(db.DateTime, nullable=True)
+
+    # TOTP two-factor authentication fields
+    totp_secret = db.Column(db.String(32), nullable=True)
+    totp_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    recovery_codes_hash = db.Column(db.Text, nullable=True)
+
     VALID_ROLES = ("user", "viewer", "dermatologist", "admin", "developer")
 
     def set_password(self, password):
@@ -228,3 +238,20 @@ class ClinicalNote(db.Model):
         "User",
         backref=db.backref("clinical_notes", lazy="dynamic"),
     )
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    event_type = db.Column(db.String(50), nullable=False)
+    ip_address = db.Column(db.String(45), nullable=True)
+    details = db.Column(db.Text, default="")
+
+    user = db.relationship("User", backref=db.backref("audit_logs", lazy="dynamic"))

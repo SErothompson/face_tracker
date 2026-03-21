@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Recovery Codes - Skin Health Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-warning">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Save Your Recovery Codes</h3>
+
+                <div class="alert alert-warning">
+                    <strong>Important:</strong> Save these recovery codes in a secure location.
+                    Each code can only be used once. If you lose access to your authenticator app,
+                    you can use these codes to log in.
+                </div>
+
+                <div class="bg-light p-3 rounded mb-4">
+                    <div class="row">
+                        {% for code in recovery_codes %}
+                        <div class="col-6 mb-2">
+                            <code class="fs-5">{{ code }}</code>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="alert alert-danger">
+                    <strong>Warning:</strong> These codes will NOT be shown again.
+                    Store them safely now.
+                </div>
+
+                <a href="{{ url_for('auth.profile') }}" class="btn btn-primary w-100">
+                    I've Saved My Recovery Codes
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

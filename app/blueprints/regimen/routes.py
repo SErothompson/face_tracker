@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request, abort
 from datetime import datetime, date
 from flask_login import current_user, login_required
 
@@ -123,7 +123,8 @@ def add_regimen():
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error adding product: {str(e)}", "error")
+            current_app.logger.exception("Error adding product")
+            flash("An error occurred while adding the product. Please try again.", "error")
             return redirect(url_for("regimen.add_regimen"))
 
     # GET: Show form
@@ -202,7 +203,8 @@ def edit_regimen(regimen_id):
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error updating product: {str(e)}", "error")
+            current_app.logger.exception("Error updating product")
+            flash("An error occurred while updating the product. Please try again.", "error")
             return redirect(url_for("regimen.edit_regimen", regimen_id=regimen_id))
 
     # GET: Show form
@@ -263,6 +265,7 @@ def deactivate_regimen(regimen_id):
         flash(f"Deactivated {entry.product_name}", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deactivating product: {str(e)}", "error")
+        current_app.logger.exception("Error deactivating product")
+        flash("An error occurred while deactivating the product. Please try again.", "error")
 
     return redirect(url_for("regimen.list_regimen"))
